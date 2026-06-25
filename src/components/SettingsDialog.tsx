@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { X, Moon, Sun, Trash2, ShieldAlert, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Moon, Sun, Trash2, ShieldAlert, Sparkles, Check } from 'lucide-react';
 import { AppSettings } from '../types';
 
 interface SettingsDialogProps {
@@ -13,6 +13,7 @@ interface SettingsDialogProps {
   settings: AppSettings;
   onChangeSettings: (settings: AppSettings) => void;
   onClearAllChats: () => void;
+  onResetCredits?: () => void;
 }
 
 export default function SettingsDialog({
@@ -21,7 +22,9 @@ export default function SettingsDialog({
   settings,
   onChangeSettings,
   onClearAllChats,
+  onResetCredits,
 }: SettingsDialogProps) {
+  const [confirmClear, setConfirmClear] = useState(false);
   if (!isOpen) return null;
 
   const toggleTheme = () => {
@@ -97,25 +100,66 @@ export default function SettingsDialog({
               </button>
             </div>
 
+            {/* Credits Reset for testing */}
+            {onResetCredits && (
+              <div className="flex items-center justify-between py-2 border-t border-zinc-700/20 pt-4">
+                <div>
+                  <span className="text-sm font-medium block">Testing Tools</span>
+                  <span className="text-xs opacity-60">Instantly refill your credit balance back to the plan limit</span>
+                </div>
+                <button
+                  onClick={onResetCredits}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    settings.theme === 'dark' 
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20' 
+                      : 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span>Refill Credits</span>
+                </button>
+              </div>
+            )}
+
             {/* Clear conversations */}
             <div className="flex items-center justify-between py-2 border-t border-zinc-700/20 pt-4">
               <div>
                 <span className="text-sm font-medium block text-red-500">Delete chats</span>
                 <span className="text-xs opacity-60">Permanently clear all chat sessions from your history</span>
               </div>
-              <button
-                id="clear-all-chats-btn"
-                onClick={() => {
-                  if (confirm("Are you sure you want to permanently delete all your conversation history? This cannot be undone.")) {
-                    onClearAllChats();
-                    onClose();
-                  }
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Clear history</span>
-              </button>
+              {confirmClear ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-500 font-bold uppercase tracking-wider animate-pulse">Are you sure?</span>
+                  <button
+                    id="confirm-clear-all-btn"
+                    onClick={() => {
+                      onClearAllChats();
+                      setConfirmClear(false);
+                      onClose();
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-all shadow-xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Yes, clear</span>
+                  </button>
+                  <button
+                    id="cancel-clear-all-btn"
+                    onClick={() => setConfirmClear(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-zinc-600 hover:bg-zinc-700 text-white transition-all"
+                  >
+                    <span>Cancel</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  id="clear-all-chats-btn"
+                  onClick={() => setConfirmClear(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Clear history</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

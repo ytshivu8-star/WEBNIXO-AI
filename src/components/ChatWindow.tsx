@@ -26,9 +26,175 @@ import {
   ChevronDown,
   Paperclip,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Zap,
+  Cpu,
+  Layers,
+  Shield,
+  Activity,
+  Lock
 } from 'lucide-react';
 import { ChatSession, Message, MODELS, ModelOption, AppSettings } from '../types';
+
+export function WebnixoLogo({ className = "w-8 h-8" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/11yuTE40NZx1imt0DARVHUfIPTrgtrJA6=s512" 
+      alt="Webnixo Logo" 
+      className={`${className} object-contain rounded-xl`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function FlashModelLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/11yuTE40NZx1imt0DARVHUfIPTrgtrJA6=s512" 
+      alt="Webnixo Flash" 
+      className={`${className} object-contain rounded-xl`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function ProModelLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/11yuTE40NZx1imt0DARVHUfIPTrgtrJA6=s512" 
+      alt="Webnixo Pro" 
+      className={`${className} object-contain rounded-xl`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function LatestModelLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/11yuTE40NZx1imt0DARVHUfIPTrgtrJA6=s512" 
+      alt="Webnixo Latest" 
+      className={`${className} object-contain rounded-xl`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function LiteModelLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/11yuTE40NZx1imt0DARVHUfIPTrgtrJA6=s512" 
+      alt="Webnixo Lite" 
+      className={`${className} object-contain rounded-xl`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function ChatGPTLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1owEGlZuAnWnuujeApVfesKNgpY5l2xw2=s512" 
+      alt="ChatGPT" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function AnthropicLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1och2V-ulECH9ujFptpnQulpdfN288JLr" 
+      alt="Claude" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function GeminiLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1-_8VTk_qQkd2qfMdvpUeCLumvg9v5dXJ" 
+      alt="Gemini" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function GrokLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1z4zahWz8TaUmq-SDCi-6-OxNEG9jfddo" 
+      alt="Grok" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function DeepSeekLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/13_MWI7R7km1HMxQ2HLMvKKqvebFPqy7K" 
+      alt="DeepSeek" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function MistralLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1flRFYCw1WYFvyoYttJTWlZTj78nJCtUd" 
+      alt="Mistral" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function PerplexityLogo({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <img 
+      src="https://lh3.googleusercontent.com/d/1-Qopm9dETsfDxmyv-5-kZN5QmGGsPgaJ" 
+      alt="Perplexity" 
+      className={`${className} object-contain rounded-md`}
+      referrerPolicy="no-referrer"
+    />
+  );
+}
+
+export function renderModelLogo(modelId: string, className: string = "w-5 h-5") {
+  switch (modelId) {
+    case 'gemini-3.5-flash':
+    case 'gemini-3.1-pro-preview':
+      return <WebnixoLogo className={className} />;
+    case 'chatgpt':
+      return <ChatGPTLogo className={className} />;
+    case 'claude':
+      return <AnthropicLogo className={className} />;
+    case 'gemini':
+      return <GeminiLogo className={className} />;
+    case 'grok':
+      return <GrokLogo className={className} />;
+    case 'deepseek':
+      return <DeepSeekLogo className={className} />;
+    case 'mistral':
+      return <MistralLogo className={className} />;
+    case 'perplexity':
+      return (
+        <div className={`${className} overflow-hidden rounded-md border border-neutral-700/10`}>
+          <PerplexityLogo className="w-full h-full object-cover" />
+        </div>
+      );
+    default:
+      return <WebnixoLogo className={className} />;
+  }
+}
 
 interface ChatWindowProps {
   activeSession: ChatSession | null;
@@ -40,6 +206,20 @@ interface ChatWindowProps {
   settings: AppSettings;
   onChangeModel: (modelId: string) => void;
   onChangeSearchGrounding: (enabled: boolean) => void;
+  onGoHome?: () => void;
+  isPremium?: boolean;
+  onOpenPricing?: () => void;
+  onChangeCompareModels?: (modelIds: string[]) => void;
+  onOpenLegal?: (tab: 'faq' | 'terms' | 'privacy' | 'cookies' | 'refund' | 'contact') => void;
+  userPlan?: 'free' | 'starter' | 'pro';
+}
+
+export function isModelAllowedForPlan(modelId: string, plan: 'free' | 'starter' | 'pro'): boolean {
+  if (plan === 'pro') return true;
+  if (plan === 'starter') {
+    return ['gemini-3.5-flash', 'deepseek', 'mistral', 'compare-all'].includes(modelId);
+  }
+  return ['gemini-3.5-flash', 'deepseek', 'compare-all'].includes(modelId);
 }
 
 export default function ChatWindow({
@@ -52,12 +232,19 @@ export default function ChatWindow({
   settings,
   onChangeModel,
   onChangeSearchGrounding,
+  onGoHome,
+  isPremium,
+  onOpenPricing,
+  onChangeCompareModels,
+  onOpenLegal,
+  userPlan,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<string | null>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +253,15 @@ export default function ChatWindow({
 
   const activeModel = MODELS.find(m => m.id === (activeSession?.model || 'gemini-3.5-flash')) || MODELS[0];
   const isSearchGroundingActive = activeSession?.searchGrounding ?? false;
+
+  const handleModelChangeSecure = (modelId: string) => {
+    const plan = userPlan || 'free';
+    if (!isModelAllowedForPlan(modelId, plan)) {
+      if (onOpenPricing) onOpenPricing();
+      return;
+    }
+    onChangeModel(modelId);
+  };
 
   // Recommendations for Empty State
   const recommendations = [
@@ -129,6 +325,26 @@ export default function ChatWindow({
     setInputValue('');
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleOptimizePrompt = async () => {
+    if (!inputValue.trim() || isOptimizing) return;
+    setIsOptimizing(true);
+    try {
+      const res = await fetch('/api/optimize-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: inputValue }),
+      });
+      const data = await res.json();
+      if (data.optimized) {
+        setInputValue(data.optimized);
+      }
+    } catch (err) {
+      console.error("Error optimizing prompt:", err);
+    } finally {
+      setIsOptimizing(false);
     }
   };
 
@@ -248,6 +464,31 @@ export default function ChatWindow({
             </button>
           )}
 
+          {/* Model Comparison Mode Toggle */}
+          {activeSession && (
+            <button
+              id="compare-models-toggle-btn"
+              onClick={() => {
+                const nextModel = activeSession.model === 'compare-all' ? 'gemini-3.5-flash' : 'compare-all';
+                handleModelChangeSecure(nextModel);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-display text-xs font-bold transition-all border uppercase tracking-wider select-none ${
+                activeSession.model === 'compare-all'
+                  ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 shadow-xs'
+                  : settings.theme === 'dark'
+                    ? 'bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10'
+                    : 'bg-white/60 border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-white/95 shadow-2xs'
+              }`}
+              title="Compare all models side-by-side with a single prompt"
+            >
+              <Layers className={`w-3.5 h-3.5 ${activeSession.model === 'compare-all' ? 'animate-pulse text-emerald-400' : ''}`} />
+              <span className="hidden sm:inline">Compare Models</span>
+              {activeSession.model === 'compare-all' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              )}
+            </button>
+          )}
+
           {/* Model Selector Dropdown */}
           <div className="relative">
             <button
@@ -259,7 +500,7 @@ export default function ChatWindow({
                   : 'bg-white/60 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-white/90 backdrop-blur-md shadow-2xs'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+              {renderModelLogo(activeModel.id, "w-4 h-4 shrink-0")}
               <span>{activeModel.name}</span>
               <ChevronDown className="w-4 h-4 opacity-60" />
             </button>
@@ -270,7 +511,7 @@ export default function ChatWindow({
                   className="fixed inset-0 z-40" 
                   onClick={() => setModelDropdownOpen(false)} 
                 />
-                <div className={`absolute left-0 mt-2 w-72 rounded-2xl shadow-2xl border p-2 z-50 backdrop-blur-2xl ${
+                <div className={`absolute left-0 mt-2 w-72 rounded-2xl shadow-2xl border p-2 z-50 backdrop-blur-2xl max-h-[80vh] overflow-y-auto ${
                   settings.theme === 'dark' 
                     ? 'bg-[#1a1a1a]/95 border-white/10 text-zinc-100' 
                     : 'bg-white/95 border-zinc-200/80 text-zinc-800'
@@ -279,33 +520,66 @@ export default function ChatWindow({
                     <span className="text-xs uppercase tracking-wider font-semibold opacity-50">Choose a Model</span>
                   </div>
                   <div className="space-y-1">
-                    {MODELS.map((model) => (
-                      <button
-                        id={`model-select-opt-${model.id}`}
-                        key={model.id}
-                        onClick={() => {
-                          onChangeModel(model.id);
-                          setModelDropdownOpen(false);
-                        }}
-                        className={`w-full text-left p-2.5 rounded-xl transition-all ${
-                          activeModel.id === model.id
-                            ? settings.theme === 'dark' ? 'bg-[#212121] text-emerald-400' : 'bg-zinc-100 text-emerald-600'
-                            : settings.theme === 'dark' ? 'hover:bg-[#212121]/50 text-zinc-300' : 'hover:bg-zinc-50 text-zinc-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold block">{model.name}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
-                            model.badge === 'Pro' 
-                              ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20' 
-                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                          }`}>
-                            {model.badge}
-                          </span>
-                        </div>
-                        <span className="text-xs opacity-60 mt-0.5 block line-clamp-1">{model.description}</span>
-                      </button>
-                    ))}
+                    {MODELS.map((model) => {
+                      const isLocked = !isModelAllowedForPlan(model.id, userPlan || 'free');
+                      const credits = model.id === 'compare-all' ? 'Multi' : (model.id.includes('flash') || model.id.includes('deepseek') ? 1 : model.id.includes('mistral') ? 2 : model.id.includes('grok') || model.id.includes('perplexity') ? 4 : 5);
+                      return (
+                        <button
+                          id={`model-select-opt-${model.id}`}
+                          key={model.id}
+                          onClick={() => {
+                            handleModelChangeSecure(model.id);
+                            setModelDropdownOpen(false);
+                          }}
+                          className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-2.5 ${
+                            activeModel.id === model.id
+                              ? settings.theme === 'dark' ? 'bg-[#212121] text-emerald-400' : 'bg-zinc-100 text-emerald-600'
+                              : isLocked
+                                ? 'opacity-50 hover:opacity-75 text-zinc-500'
+                                : settings.theme === 'dark' ? 'hover:bg-[#212121]/50 text-zinc-300' : 'hover:bg-zinc-50 text-zinc-700'
+                          }`}
+                        >
+                          <div className="mt-0.5">
+                            {renderModelLogo(model.id, "w-5 h-5")}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between gap-1">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-sm font-semibold truncate block">{model.name}</span>
+                                {isLocked && <Lock className="w-3 h-3 text-red-400 shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="text-[8px] font-black uppercase tracking-wider bg-zinc-700/20 text-zinc-400 px-1 py-0.5 rounded-md border border-zinc-700/10">
+                                  {credits} Cr
+                                </span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                                  model.badge === 'Router'
+                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
+                                    : model.badge === 'Pro'
+                                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+                                      : model.badge === 'ChatGPT'
+                                        ? 'bg-green-500/15 text-green-400 border border-green-500/20'
+                                        : model.badge === 'Anthropic'
+                                          ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20'
+                                          : model.badge === 'Gemini'
+                                            ? 'bg-sky-500/15 text-sky-400 border border-sky-500/20'
+                                            : model.badge === 'xAI Grok'
+                                              ? 'bg-neutral-500/15 text-neutral-400 border border-neutral-500/20 dark:text-zinc-300'
+                                              : model.badge === 'DeepSeek'
+                                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                                                : model.badge === 'Mistral'
+                                                  ? 'bg-red-500/15 text-red-400 border border-red-500/20'
+                                                  : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
+                                }`}>
+                                  {model.badge}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs opacity-60 mt-0.5 block line-clamp-1">{model.description}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </>
@@ -320,6 +594,81 @@ export default function ChatWindow({
         </div>
       </header>
 
+      {/* Model Comparison Selection Bar */}
+      {activeSession && activeSession.model === 'compare-all' && (
+        <div className={`px-4 py-2 border-b shrink-0 select-none flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+          settings.theme === 'dark' 
+            ? 'bg-[#121212]/30 border-white/5 text-zinc-300' 
+            : 'bg-zinc-50/50 border-zinc-200/50 text-zinc-700'
+        }`}>
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-xs font-bold font-display uppercase tracking-wider">Arena Engines:</span>
+            <span className="text-[10px] opacity-60 hidden sm:inline">Select engines to compare side-by-side</span>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+            {MODELS.filter(m => m.id !== 'compare-all').map((model) => {
+              const currentCompareList = activeSession.compareModelIds && activeSession.compareModelIds.length > 0
+                ? activeSession.compareModelIds
+                : ['chatgpt', 'claude', 'gemini', 'grok', 'deepseek'];
+              
+              const isSelected = currentCompareList.includes(model.id);
+              
+              return (
+                <button
+                  id={`arena-toggle-${model.id}`}
+                  key={model.id}
+                  onClick={() => {
+                    const premiumModels = [
+                      'gemini-3.1-pro-preview',
+                      'chatgpt',
+                      'claude',
+                      'grok',
+                      'deepseek',
+                      'mistral',
+                      'perplexity'
+                    ];
+                    if (premiumModels.includes(model.id) && !isPremium) {
+                      if (onOpenPricing) onOpenPricing();
+                      return;
+                    }
+                    
+                    let newList: string[];
+                    if (isSelected) {
+                      if (currentCompareList.length <= 1) return;
+                      newList = currentCompareList.filter(id => id !== model.id);
+                    } else {
+                      newList = [...currentCompareList, model.id];
+                    }
+                    if (onChangeCompareModels) {
+                      onChangeCompareModels(newList);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold font-display transition-all border shrink-0 cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 font-bold shadow-2xs'
+                      : settings.theme === 'dark'
+                        ? 'bg-transparent border-white/5 text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                        : 'bg-transparent border-zinc-200 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100'
+                  }`}
+                >
+                  <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
+                    {renderModelLogo(model.id, "w-3.5 h-3.5")}
+                  </div>
+                  <span>{model.badge}</span>
+                  {isSelected ? (
+                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
+                  ) : (
+                    <span className="w-1 h-1 rounded-full bg-transparent" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Main Messages Area */}
       <div 
         id="messages-scroll-area"
@@ -328,71 +677,51 @@ export default function ChatWindow({
         className="flex-1 overflow-y-auto px-4 py-6 md:px-8 space-y-6"
       >
         {!activeSession || activeSession.messages.length === 0 ? (
-          /* EMPTY STATE (WELCOME SCREEN) */
-          <div id="empty-state-welcome" className="max-w-2xl mx-auto h-full flex flex-col justify-center py-10 select-none">
-            <div className="text-center mb-12 space-y-3">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl mx-auto border transition-all animate-fade-in ${
+          /* WEBNIXO MINIMALIST LANDING */
+          <div id="empty-state-welcome" className="max-w-2xl mx-auto h-full flex flex-col items-center justify-center py-16 md:py-28 text-center space-y-6 select-none animate-fade-in">
+            <div className="relative inline-flex items-center justify-center">
+              <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-2xl animate-pulse" />
+              <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-xl relative border ${
                 settings.theme === 'dark'
-                  ? 'bg-white/5 border-white/20 backdrop-blur-2xl text-emerald-400'
-                  : 'bg-black/5 border-black/10 backdrop-blur-md text-emerald-600'
+                  ? 'bg-zinc-900/80 border-white/10'
+                  : 'bg-white border-zinc-200'
               }`}>
-                <span className="text-3xl font-bold">W</span>
+                <WebnixoLogo className="w-12 h-12" />
               </div>
-              <h1 className="text-3xl font-bold font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 mt-4">
+            </div>
+            
+            <div className="space-y-2">
+              <h1 className="text-3xl font-black font-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
                 WEBNIXO AI
               </h1>
-              <p className={`text-sm max-w-md mx-auto ${
+              <p className={`text-base font-medium leading-relaxed max-w-md ${
                 settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'
               }`}>
-                What can I help you design, debug, brainstorm, or write today? Ask anything.
+                How can I help you today?
               </p>
-            </div>
-
-            {/* Recommendations Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {recommendations.map((item, idx) => (
-                <div
-                  id={`suggestion-card-${idx}`}
-                  key={idx}
-                  onClick={() => onSendMessage(item.prompt, isSearchGroundingActive)}
-                  className={`p-4 rounded-2xl border text-left cursor-pointer transition-all duration-200 transform hover:scale-[1.01] hover:shadow-lg backdrop-blur-md ${
-                    settings.theme === 'dark'
-                      ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-zinc-200'
-                      : 'bg-black/5 border-black/5 hover:bg-black/10 hover:border-black/15 text-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <div className={`p-1.5 rounded-lg ${
-                      settings.theme === 'dark' ? 'bg-[#121212]' : 'bg-white shadow-2xs border border-zinc-100'
-                    }`}>
-                      {item.icon}
-                    </div>
-                    <span className="text-sm font-semibold font-display">{item.title}</span>
-                  </div>
-                  <p className="text-xs opacity-60 line-clamp-2 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
             </div>
           </div>
         ) : (
           /* MESSAGE RENDER LIST */
-          <div id="message-list-container" className="max-w-3xl mx-auto space-y-8">
+          <div id="message-list-container" className={`w-full mx-auto space-y-8 ${
+            activeSession.messages.some(m => !!m.compares) ? 'max-w-[98%] px-2 md:px-4' : 'max-w-3xl'
+          }`}>
             {activeSession.messages.map((msg, idx) => (
               <div 
                 id={`message-row-${msg.id}`}
                 key={msg.id} 
                 className={`flex gap-4 md:gap-6 ${
                   msg.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                } ${msg.compares ? 'w-full' : ''}`}
               >
                 {/* User avatar or AI Avatar layout */}
                 {msg.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-500/25 shadow-xs select-none">
-                    W
+                  <div className="w-8 h-8 rounded-xl overflow-hidden bg-emerald-500/5 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/15 shadow-xs select-none">
+                    {renderModelLogo(activeSession.model || 'gemini-3.5-flash', "w-5 h-5")}
                   </div>
                 )}
 
-                <div className={`max-w-[85%] flex flex-col space-y-1.5 ${
+                <div className={`${msg.compares ? 'w-full' : 'max-w-[85%]'} flex flex-col space-y-1.5 ${
                   msg.role === 'user' ? 'items-end' : 'items-start'
                 }`}>
                   {/* Search Query info if searching was used and returned queries */}
@@ -404,7 +733,7 @@ export default function ChatWindow({
                   )}
 
                   {/* Message Bubble Container */}
-                  <div className={`px-4.5 py-3 rounded-2xl ${
+                  <div className={`${msg.compares ? 'w-full' : 'px-4.5 py-3 rounded-2xl'} ${
                     msg.role === 'user'
                       ? settings.theme === 'dark'
                         ? 'bg-white/10 border border-white/10 backdrop-blur-md text-zinc-100 shadow-sm'
@@ -413,6 +742,74 @@ export default function ChatWindow({
                   }`}>
                     {msg.role === 'user' ? (
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    ) : msg.compares ? (
+                      (() => {
+                        return (
+                          <div className="flex flex-row gap-4 overflow-x-auto pb-4 w-full mt-2 scrollbar-thin snap-x snap-mandatory">
+                            {Object.entries(msg.compares).map(([modelId, comp]) => (
+                              <div 
+                                key={modelId}
+                                className={`min-w-[280px] sm:min-w-[320px] md:min-w-[360px] lg:min-w-[400px] max-w-[500px] flex-1 p-4 rounded-2xl border flex flex-col justify-between transition-all snap-start ${
+                                  settings.theme === 'dark'
+                                    ? 'bg-zinc-900/60 border-white/5 shadow-inner'
+                                    : 'bg-white border-zinc-200/60 shadow-xs'
+                                }`}
+                              >
+                                <div className="space-y-3 flex-1">
+                                  {/* Model Info Header */}
+                                  <div className="flex items-center justify-between border-b border-zinc-700/10 dark:border-white/10 pb-2">
+                                    <div className="flex items-center gap-1.5">
+                                      {renderModelLogo(modelId, "w-4 h-4 shrink-0")}
+                                      <span className="text-[10px] md:text-xs font-bold font-display uppercase tracking-wider">{comp.modelName}</span>
+                                    </div>
+                                    {comp.isLoading && (
+                                      <span className="flex h-2 w-2 relative">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Model response markdown content */}
+                                  <div className="text-xs overflow-hidden min-h-[80px]">
+                                    {comp.isLoading ? (
+                                      <div className="space-y-2 py-2 animate-pulse">
+                                        <div className="h-2.5 bg-zinc-700/20 dark:bg-white/5 rounded w-5/6"></div>
+                                        <div className="h-2.5 bg-zinc-700/20 dark:bg-white/5 rounded w-4/6"></div>
+                                        <div className="h-2.5 bg-zinc-700/20 dark:bg-white/5 rounded w-5/6"></div>
+                                        <div className="h-2.5 bg-zinc-700/20 dark:bg-white/5 rounded w-3/6"></div>
+                                      </div>
+                                    ) : (
+                                      <div className="markdown-body">
+                                        <ReactMarkdown components={renderMarkdownComponents}>
+                                          {comp.content || "*(No response generated)*"}
+                                        </ReactMarkdown>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Column action toolbar */}
+                                {!comp.isLoading && comp.content && (
+                                  <div className="flex justify-end gap-1.5 border-t border-zinc-700/10 dark:border-white/10 pt-2 mt-3 select-none">
+                                    <button
+                                      onClick={() => navigator.clipboard.writeText(comp.content)}
+                                      className={`p-1 rounded-lg transition-colors border ${
+                                        settings.theme === 'dark' 
+                                          ? 'border-white/5 hover:bg-white/10 text-zinc-400 hover:text-white bg-white/5' 
+                                          : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 bg-white shadow-3xs'
+                                      }`}
+                                      title="Copy response"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()
                     ) : (
                       <div className="markdown-body">
                         <ReactMarkdown components={renderMarkdownComponents}>
@@ -505,20 +902,15 @@ export default function ChatWindow({
                   </div>
                 </div>
 
-                {/* User avatar for right aligned layout */}
-                {msg.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-500/25 shadow-xs select-none">
-                    {(settings.userEmail || "G").charAt(0).toUpperCase()}
-                  </div>
-                )}
+
               </div>
             ))}
 
             {/* Active AI Loading Indicator / Search status */}
             {isLoading && (
               <div id="ai-loading-indicator-row" className="flex gap-4 md:gap-6 justify-start">
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-500/25 shadow-xs select-none animate-pulse">
-                  W
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/25 shadow-xs select-none animate-pulse">
+                  <WebnixoLogo className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div className="flex flex-col space-y-2">
                   {isSearchGroundingActive && (
@@ -590,6 +982,25 @@ export default function ChatWindow({
               >
                 <Globe className={`w-3.5 h-3.5 ${isSearchGroundingActive ? 'text-emerald-400' : 'opacity-65'}`} />
                 <span>Search</span>
+              </button>
+
+              <button
+                id="optimize-prompt-btn"
+                onClick={handleOptimizePrompt}
+                disabled={!inputValue.trim() || isOptimizing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-xs font-semibold border ${
+                  isOptimizing
+                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse cursor-wait'
+                    : inputValue.trim()
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 hover:bg-amber-500/20'
+                      : settings.theme === 'dark'
+                        ? 'bg-transparent border-zinc-800 text-zinc-600 cursor-not-allowed opacity-40'
+                        : 'bg-transparent border-zinc-200 text-zinc-400 cursor-not-allowed opacity-40'
+                }`}
+                title="Optimize prompt before sending"
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+                <span>{isOptimizing ? 'Optimizing...' : 'Optimize'}</span>
               </button>
             </div>
 

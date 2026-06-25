@@ -5,10 +5,27 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChatSession, Message, MODELS, AppSettings } from './types';
+
+export const MODEL_CREDIT_COSTS: Record<string, number> = {
+  'gemini-3.5-flash': 1,
+  'deepseek': 1,
+  'mistral': 2,
+  'grok': 4,
+  'perplexity': 4,
+  'chatgpt': 5,
+  'claude': 5,
+  'gemini': 5,
+  'gemini-3.1-pro-preview': 5,
+};
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
 import SettingsDialog from './components/SettingsDialog';
+import LandingPage from './components/LandingPage';
+import PaymentVerificationPage from './components/PaymentVerificationPage';
+import PricingModal from './components/PricingModal';
+import LegalCenter, { LegalTab } from './components/LegalCenter';
 import { Menu, PanelLeftOpen, Sparkles } from 'lucide-react';
+import { supabase } from './lib/supabaseClient';
 
 const LOCAL_STORAGE_CHATS_KEY = 'webnixo_ai_chats';
 const LOCAL_STORAGE_SETTINGS_KEY = 'webnixo_ai_settings';
@@ -24,6 +41,252 @@ export default function App() {
     clearOnNewChat: false,
     userEmail: 'ytshivu8@gmail.com' // Connected user email from runtime context
   });
+  
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('webnixo_logged_in') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [isPremium, setIsPremium] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('webnixo_premium_user') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [userPlan, setUserPlan] = useState<'free' | 'starter' | 'pro'>(() => {
+    try {
+      return (localStorage.getItem('webnixo_user_plan') as 'free' | 'starter' | 'pro') || 'free';
+    } catch {
+      return 'free';
+    }
+  });
+
+  const [creditsLimit, setCreditsLimit] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem('webnixo_credits_limit')) || 30;
+    } catch {
+      return 30;
+    }
+  });
+
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem(`webnixo_credits_remaining_${settings.userEmail || 'default'}`);
+      if (stored !== null) return Number(stored);
+      const plan = localStorage.getItem('webnixo_user_plan') || 'free';
+      return plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+    } catch {
+      return 30;
+    }
+  });
+
+  const updateCredits = (remaining: number, limit?: number) => {
+    setCreditsRemaining(remaining);
+    const emailStr = (settings.userEmail || 'default').toLowerCase();
+    localStorage.setItem(`webnixo_credits_remaining_${emailStr}`, String(remaining));
+    if (limit !== undefined) {
+      setCreditsLimit(limit);
+      localStorage.setItem('webnixo_credits_limit', String(limit));
+    }
+  };
+
+  const updatePlan = (plan: 'free' | 'starter' | 'pro') => {
+    setUserPlan(plan);
+    localStorage.setItem('webnixo_user_plan', plan);
+    setIsPremium(plan !== 'free');
+    localStorage.setItem('webnixo_premium_user', plan !== 'free' ? 'true' : 'false');
+    const limit = plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+    updateCredits(limit, limit);
+  };
+
+  const handleResetCredits = () => {
+    const limit = userPlan === 'pro' ? 3000 : userPlan === 'starter' ? 1000 : 30;
+    updateCredits(limit, limit);
+  };
+
+  const checkPremiumStatus = async (email: string) => {
+    try {
+      const res = await fetch(`/api/payment/status?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const emailStr = email.toLowerCase();
+        if (data.isPremium) {
+          setIsPremium(true);
+          localStorage.setItem('webnixo_premium_user', 'true');
+          
+          const planId = data.plan?.plan_id || '';
+          if (planId.includes('pro')) {
+            setUserPlan('pro');
+            localStorage.setItem('webnixo_user_plan', 'pro');
+            setCreditsLimit(3000);
+            localStorage.setItem('webnixo_credits_limit', '3000');
+            const key = `webnixo_credits_remaining_${emailStr}`;
+            if (localStorage.getItem(key) === null) {
+              setCreditsRemaining(3000);
+              localStorage.setItem(key, '3000');
+            }
+          } else {
+            setUserPlan('starter');
+            localStorage.setItem('webnixo_user_plan', 'starter');
+            setCreditsLimit(1000);
+            localStorage.setItem('webnixo_credits_limit', '1000');
+            const key = `webnixo_credits_remaining_${emailStr}`;
+            if (localStorage.getItem(key) === null) {
+              setCreditsRemaining(1000);
+              localStorage.setItem(key, '1000');
+            }
+          }
+        } else {
+          setIsPremium(false);
+          localStorage.removeItem('webnixo_premium_user');
+          setUserPlan('free');
+          localStorage.setItem('webnixo_user_plan', 'free');
+          setCreditsLimit(30);
+          localStorage.setItem('webnixo_credits_limit', '30');
+          const key = `webnixo_credits_remaining_${emailStr}`;
+          if (localStorage.getItem(key) === null) {
+            setCreditsRemaining(30);
+            localStorage.setItem(key, '30');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[Premium Status Check] Error:', e);
+    }
+  };
+
+  const handleLogin = (email: string, name: string) => {
+    setIsLoggedIn(true);
+    sessionStorage.setItem('webnixo_logged_in', 'true');
+    const updatedSettings = { ...settings, userEmail: email };
+    setSettings(updatedSettings);
+    localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(updatedSettings));
+    
+    // Check premium status on login
+    checkPremiumStatus(email);
+
+    // Auto-create a chat if there's none
+    if (chats.length === 0) {
+      const newId = `chat-${Date.now()}`;
+      const newSession: ChatSession = {
+        id: newId,
+        title: "New Chat",
+        createdAt: new Date().toISOString(),
+        model: "gemini-3.5-flash",
+        searchGrounding: false,
+        messages: []
+      };
+      saveChats([newSession]);
+      setActiveChatId(newId);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error(e);
+    }
+    setIsLoggedIn(false);
+    setIsPremium(false);
+    sessionStorage.removeItem('webnixo_logged_in');
+    localStorage.removeItem('webnixo_premium_user');
+  };
+
+  // Google OAuth Session Check & Message Event Listener
+  useEffect(() => {
+    // Check current active session on boot
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        const email = session.user.email || 'user@example.com';
+        const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Google User';
+        handleLogin(email, name);
+      }
+    });
+
+    // Listen to Auth State Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && session.user) {
+        const email = session.user.email || 'user@example.com';
+        const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Google User';
+        handleLogin(email, name);
+      } else {
+        setIsLoggedIn(false);
+        setIsPremium(false);
+      }
+    });
+
+    // Listen to messaging from popup auth flow
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin format safely for developers
+      if (!event.origin.includes('.run.app') && !event.origin.includes('localhost') && !event.origin.includes('127.0.0.1')) {
+        return;
+      }
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        console.log('[Parent Frame] OAuth Login succeeded signal received from popup.');
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session && session.user) {
+            const email = session.user.email || 'user@example.com';
+            const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Google User';
+            handleLogin(email, name);
+          }
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
+  // Popup Auth Callback listener (runs when this page is loaded inside popup frame)
+  useEffect(() => {
+    if (window.location.pathname.startsWith('/auth/callback')) {
+      const handlePopupCallback = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session && session.user) {
+            console.log('[Popup Callbacks] Session established. Posting message to opener.');
+            if (window.opener) {
+              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+              window.close();
+            } else {
+              window.location.href = '/';
+            }
+          } else {
+            // Wait brief moment for auth state to populate
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+              if (session && session.user) {
+                if (window.opener) {
+                  window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+                  window.close();
+                } else {
+                  window.location.href = '/';
+                }
+                subscription.unsubscribe();
+              }
+            });
+            setTimeout(() => {
+              subscription.unsubscribe();
+              window.close();
+            }, 6000);
+          }
+        } catch (e) {
+          console.error('[Popup Callback] Error finishing session:', e);
+          setTimeout(() => window.close(), 3000);
+        }
+      };
+      handlePopupCallback();
+    }
+  }, []);
 
   // Load chats and settings on mount
   useEffect(() => {
@@ -155,6 +418,12 @@ export default function App() {
     saveChats(updated);
   };
 
+  const handleChangeCompareModels = (modelIds: string[]) => {
+    if (!activeChatId) return;
+    const updated = chats.map(c => c.id === activeChatId ? { ...c, compareModelIds: modelIds } : c);
+    saveChats(updated);
+  };
+
   const handleSendMessage = async (text: string, searchGrounding: boolean) => {
     let currentSession = getActiveSession();
     let sessionId = activeChatId;
@@ -176,6 +445,31 @@ export default function App() {
       setActiveChatId(newId);
     }
 
+    // 1. Calculate and verify credit costs first
+    let cost = 1;
+    if (currentSession.model === 'compare-all') {
+      const compareModels = currentSession.compareModelIds && currentSession.compareModelIds.length > 0
+        ? currentSession.compareModelIds
+        : ['chatgpt', 'claude', 'gemini', 'grok', 'deepseek'];
+      cost = compareModels.reduce((sum, m) => sum + (MODEL_CREDIT_COSTS[m] || 1), 0);
+    } else {
+      cost = MODEL_CREDIT_COSTS[currentSession.model] || 1;
+    }
+
+    if (creditsRemaining < cost) {
+      const errorMsg: Message = {
+        id: `msg-${Date.now()}-error`,
+        role: 'assistant',
+        content: `⚠️ **Insufficient Credits**: This request requires **${cost} credit${cost > 1 ? 's' : ''}** using **${MODELS.find(m => m.id === currentSession?.model)?.name || currentSession?.model}**, but you only have **${creditsRemaining} credit${creditsRemaining === 1 ? '' : 's'}** remaining.\n\n[Please click here to upgrade your plan or reset your credits.](pricing)`,
+        timestamp: new Date().toISOString(),
+        isError: true
+      };
+      const finalSession = { ...currentSession, messages: [...currentSession.messages, errorMsg] };
+      saveChats(chats.map(c => c.id === sessionId ? finalSession : c));
+      setPricingIsOpen(true);
+      return;
+    }
+
     const userMsg: Message = {
       id: `msg-${Date.now()}-user`,
       role: 'user',
@@ -192,6 +486,9 @@ export default function App() {
     setIsLoading(true);
 
     try {
+      // Deduct credits on successful start/prep of the message invocation
+      updateCredits(Math.max(0, creditsRemaining - cost));
+
       // 1. Trigger Title generation if this is the very first user message
       const isFirstMessage = currentSession.messages.length === 0;
       if (isFirstMessage) {
@@ -211,6 +508,115 @@ export default function App() {
       }
 
       // 2. Fetch conversational response from backend
+      if (currentSession.model === 'compare-all') {
+        const compareModels = currentSession.compareModelIds && currentSession.compareModelIds.length > 0
+          ? currentSession.compareModelIds
+          : ['chatgpt', 'claude', 'gemini', 'grok', 'deepseek'];
+        
+        // Initial compares state
+        const initialCompares: Record<string, any> = {};
+        compareModels.forEach(m => {
+          const modelObj = MODELS.find(x => x.id === m);
+          const mName = modelObj ? modelObj.name : m;
+
+          initialCompares[m] = {
+            modelName: mName,
+            content: '',
+            isLoading: true
+          };
+        });
+
+        const assistantMsg: Message = {
+          id: `msg-${Date.now()}-assistant`,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+          compares: initialCompares
+        };
+
+        const finalSession = { ...updatedSession, messages: [...updatedMessages, assistantMsg] };
+        saveChats(chats.map(c => c.id === sessionId ? finalSession : c));
+
+        // Call each model in parallel
+        await Promise.all(
+          compareModels.map(async (m) => {
+            try {
+              const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: text,
+                  history: currentSession!.messages,
+                  model: m,
+                  searchGrounding: searchGrounding
+                })
+              });
+
+              const data = await res.json();
+
+              if (!res.ok || data.isError) {
+                throw new Error(data.error || "Generation failed");
+              }
+
+              setChats(prev => {
+                const updatedChats = prev.map(c => {
+                  if (c.id === sessionId) {
+                    const msgs = [...c.messages];
+                    const lastMsg = { ...msgs[msgs.length - 1] };
+                    if (lastMsg && lastMsg.role === 'assistant' && lastMsg.compares) {
+                      lastMsg.compares = {
+                        ...lastMsg.compares,
+                        [m]: {
+                          ...lastMsg.compares[m],
+                          content: data.content,
+                          isLoading: false
+                        }
+                      };
+                      msgs[msgs.length - 1] = lastMsg;
+                    }
+                    return { ...c, messages: msgs };
+                  }
+                  return c;
+                });
+                localStorage.setItem(LOCAL_STORAGE_CHATS_KEY, JSON.stringify(updatedChats));
+                return updatedChats;
+              });
+
+            } catch (err: any) {
+              console.error(`Comparison failed for ${m}:`, err);
+              setChats(prev => {
+                const updatedChats = prev.map(c => {
+                  if (c.id === sessionId) {
+                    const msgs = [...c.messages];
+                    const lastMsg = { ...msgs[msgs.length - 1] };
+                    if (lastMsg && lastMsg.role === 'assistant' && lastMsg.compares) {
+                      lastMsg.compares = {
+                        ...lastMsg.compares,
+                        [m]: {
+                          ...lastMsg.compares[m],
+                          content: `❌ **Error**: ${err.message || "Failed to respond. Please ensure GEMINI_API_KEY is configured."}`,
+                          isLoading: false,
+                          error: err.message
+                        }
+                      };
+                      msgs[msgs.length - 1] = lastMsg;
+                    }
+                    return { ...c, messages: msgs };
+                  }
+                  return c;
+                });
+                localStorage.setItem(LOCAL_STORAGE_CHATS_KEY, JSON.stringify(updatedChats));
+                return updatedChats;
+              });
+            }
+          })
+        );
+
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Fetch conversational response from backend (for normal single-model chat)
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -270,6 +676,22 @@ export default function App() {
     const userPromptMsg = messagesCopy[messagesCopy.length - 1];
     if (userPromptMsg.role !== 'user') return;
 
+    // Verify credits for regeneration
+    const cost = MODEL_CREDIT_COSTS[currentSession.model] || 1;
+    if (creditsRemaining < cost) {
+      const errorMsg: Message = {
+        id: `msg-${Date.now()}-error`,
+        role: 'assistant',
+        content: `⚠️ **Insufficient Credits**: This request requires **${cost} credit${cost > 1 ? 's' : ''}**, but you only have **${creditsRemaining} credit${creditsRemaining === 1 ? '' : 's'}** remaining.\n\n[Please click here to upgrade your plan or reset your credits.](pricing)`,
+        timestamp: new Date().toISOString(),
+        isError: true
+      };
+      const finalSession = { ...currentSession, messages: [...messagesCopy, errorMsg] };
+      saveChats(chats.map(c => c.id === activeChatId ? finalSession : c));
+      setPricingIsOpen(true);
+      return;
+    }
+
     // Save history minus last assistant reply
     const updatedSession = { ...currentSession, messages: messagesCopy };
     const nextChats = chats.map(c => c.id === activeChatId ? updatedSession : c);
@@ -277,6 +699,9 @@ export default function App() {
     setIsLoading(true);
 
     try {
+      // Deduct credits
+      updateCredits(Math.max(0, creditsRemaining - cost));
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,7 +748,55 @@ export default function App() {
     }
   };
 
+  const [pricingIsOpen, setPricingIsOpen] = useState(false);
+  const [legalIsOpen, setLegalIsOpen] = useState(false);
+  const [legalActiveTab, setLegalActiveTab] = useState<LegalTab>('faq');
+
+  const handleOpenLegal = (tab: LegalTab = 'faq') => {
+    setLegalActiveTab(tab);
+    setLegalIsOpen(true);
+  };
+
   const activeSession = getActiveSession();
+
+  // Intercept special routes
+  const isAuthCallbackPath = window.location.pathname.startsWith('/auth/callback');
+  const isPaymentVerifyPath = window.location.pathname.startsWith('/payment-verify');
+
+  if (isAuthCallbackPath) {
+    return (
+      <div className="min-h-screen bg-[#212121] flex flex-col items-center justify-center text-zinc-100 p-6 text-center select-none font-sans">
+        <div className="space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin mx-auto" />
+          <h2 className="text-xl font-bold tracking-tight">Authenticating Secure Workspace...</h2>
+          <p className="text-xs text-zinc-400">Verifying session keys with Google. This window will close automatically.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isPaymentVerifyPath) {
+    return (
+      <PaymentVerificationPage 
+        theme={settings.theme} 
+        onReturn={() => { window.location.href = '/'; }} 
+      />
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <LandingPage settings={settings} onLogin={handleLogin} onOpenLegal={handleOpenLegal} />
+        <LegalCenter
+          isOpen={legalIsOpen}
+          onClose={() => setLegalIsOpen(false)}
+          initialTab={legalActiveTab}
+          theme={settings.theme}
+        />
+      </>
+    );
+  }
 
   return (
     <div className={`h-screen w-screen flex overflow-hidden font-sans`}>
@@ -339,7 +812,22 @@ export default function App() {
         isOpen={sidebarIsOpen}
         onToggleSidebar={() => setSidebarIsOpen(!sidebarIsOpen)}
         settings={settings}
+        onLogout={handleLogout}
+        isPremium={isPremium}
+        onOpenPricing={() => setPricingIsOpen(true)}
+        onOpenLegal={handleOpenLegal}
+        userPlan={userPlan}
+        creditsRemaining={creditsRemaining}
+        creditsLimit={creditsLimit}
       />
+
+      {/* Mobile Sidebar backdrop overlay */}
+      {sidebarIsOpen && (
+        <div 
+          onClick={() => setSidebarIsOpen(false)} 
+          className="md:hidden fixed inset-0 bg-black/40 backdrop-blur-xs z-40 animate-fade-in cursor-pointer"
+        />
+      )}
 
       {/* Main Conversation viewport */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
@@ -386,6 +874,11 @@ export default function App() {
           settings={settings}
           onChangeModel={handleChangeModel}
           onChangeSearchGrounding={handleChangeSearchGrounding}
+          isPremium={isPremium}
+          onOpenPricing={() => setPricingIsOpen(true)}
+          onChangeCompareModels={handleChangeCompareModels}
+          onOpenLegal={handleOpenLegal}
+          userPlan={userPlan}
         />
       </div>
 
@@ -396,6 +889,24 @@ export default function App() {
         settings={settings}
         onChangeSettings={saveSettings}
         onClearAllChats={handleClearAllChats}
+        onResetCredits={handleResetCredits}
+      />
+
+      {/* Cashfree PG Pricing modal */}
+      <PricingModal
+        isOpen={pricingIsOpen}
+        onClose={() => setPricingIsOpen(false)}
+        userEmail={settings.userEmail}
+        theme={settings.theme}
+        onOpenLegal={handleOpenLegal}
+      />
+
+      {/* Help & Legal Center Modal */}
+      <LegalCenter
+        isOpen={legalIsOpen}
+        onClose={() => setLegalIsOpen(false)}
+        initialTab={legalActiveTab}
+        theme={settings.theme}
       />
     </div>
   );
