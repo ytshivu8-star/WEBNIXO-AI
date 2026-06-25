@@ -1,0 +1,6 @@
+{
+  "name": "WEBNIXO AI",
+  "description": "An elegant, feature-rich AI conversation platform styled exactly like ChatGPT, powered by Gemini with integrated real-time Web Search Grounding.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
