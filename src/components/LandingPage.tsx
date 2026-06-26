@@ -320,10 +320,196 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
 
         {/* Why Choose WEBNIXO AI Section -> Replaced with beautifully animated Advantages & ROI section */}
         <div className="col-span-1 lg:col-span-12 mt-12 md:mt-20 pt-12 md:pt-20 border-t border-zinc-500/10">
+          {/* Main Visual Campaign Banner: Get 8+ Premium AI Models for Half the Price of One */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className={`max-w-5xl mx-auto mb-16 p-8 md:p-12 rounded-3xl border relative overflow-hidden ${
+              settings.theme === 'dark' 
+                ? 'bg-radial from-emerald-500/10 via-zinc-900/40 to-black border-emerald-500/10 shadow-emerald-900/10 shadow-2xl' 
+                : 'bg-gradient-to-b from-emerald-50 to-white border-emerald-200/50 shadow-xl'
+            }`}
+          >
+            {/* Ambient Background Glow Loops */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-400/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-violet-400/5 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
+
+            <div className="text-center space-y-4 max-w-4xl mx-auto relative z-10">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider"
+              >
+                <Sparkles className="w-3.5 h-3.5 animate-bounce text-emerald-400" />
+                <span>SUPERCHARGED UNIFIED AI LICENSE</span>
+              </motion.div>
+              
+              <h2 className="text-3xl md:text-6xl font-black tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-emerald-400 to-sky-400 leading-[1.1] md:leading-[1.15] max-w-3xl mx-auto text-balance">
+                Get 8+ Premium AI Models <br className="hidden md:inline" />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
+                  for Half the Price of One!
+                </span>
+              </h2>
+              
+              <p className={`text-xs md:text-base leading-relaxed max-w-2xl mx-auto ${
+                settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'
+              }`}>
+                Stop stacking redundant $20/month AI subscriptions. Webnixo bundles every elite model (GPT-4o, Claude 3.5 Sonnet, Perplexity, Grok, and more) into one single fluid interface with absolute lightning speeds.
+              </p>
+            </div>
+
+            {/* High-Animation Dual Campaign Grid (The Old Way vs. The Webnixo Way) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 items-stretch relative z-10">
+              {/* Card A: The Old Way (Red / Dispersed) */}
+              <motion.div 
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className={`p-6 md:p-8 rounded-2xl border flex flex-col justify-between ${
+                  settings.theme === 'dark' 
+                    ? 'bg-zinc-950/60 border-red-950/40' 
+                    : 'bg-white border-red-100'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-500/10">
+                    <span className="text-xs font-mono font-bold uppercase tracking-widest text-red-400">THE OLD WAY</span>
+                    <span className="text-xs font-mono text-zinc-500 line-through">₹11,400 / month</span>
+                  </div>
+                  <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    <span className="text-red-500">❌</span> Dispersed Subscriptions
+                  </h3>
+                  
+                  {/* Subscription Grid List */}
+                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    {[
+                      { name: "ChatGPT Plus", cost: "₹1,999", color: "bg-emerald-500/10 border-emerald-500/20" },
+                      { name: "Claude Pro", cost: "₹1,999", color: "bg-orange-500/10 border-orange-500/20" },
+                      { name: "Perplexity Pro", cost: "₹1,999", color: "bg-sky-500/10 border-sky-500/20" },
+                      { name: "Grok 2 Premium", cost: "₹1,299", color: "bg-purple-500/10 border-purple-500/20" },
+                      { name: "Gemini Advanced", cost: "₹1,999", color: "bg-blue-500/10 border-blue-500/20" },
+                      { name: "Mistral Paid", cost: "₹1,299", color: "bg-amber-500/10 border-amber-500/20" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg border border-zinc-500/5 bg-zinc-500/5 opacity-60">
+                        <span className="truncate">{item.name}</span>
+                        <span className="font-mono text-[10px] text-zinc-400">{item.cost}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-zinc-500/10 flex items-center justify-between text-xs">
+                  <span className="text-zinc-500">Total Fatigue:</span>
+                  <span className="font-extrabold text-red-400 uppercase tracking-wider">Infinite Logins & Waste</span>
+                </div>
+              </motion.div>
+
+              {/* Card B: The Webnixo Way (Emerald / Glowing) */}
+              <motion.div 
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className={`p-6 md:p-8 rounded-2xl border relative flex flex-col justify-between overflow-hidden shadow-2xl ${
+                  settings.theme === 'dark' 
+                    ? 'bg-neutral-900 border-emerald-500/30 shadow-emerald-500/5' 
+                    : 'bg-white border-emerald-300 shadow-emerald-100'
+                }`}
+              >
+                {/* Micro Animated Glow Ring */}
+                <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider rounded-bl-xl shadow-lg">
+                  SAVINGS CHAMPION
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-4 border-b border-zinc-500/10">
+                    <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">WEBNIXO PLATINUM</span>
+                    <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">SAVE 98%</span>
+                  </div>
+                  
+                  <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
+                    <span className="text-emerald-500">✨</span> Unified Super License
+                  </h3>
+                  
+                  <p className="text-xs text-zinc-400 mb-4">
+                    Access all 8+ frontier neural networks with zero switching latency. Real-time web-lookup, full markdown output support, and instant code terminals.
+                  </p>
+
+                  {/* Visual Cluster of Logo Avatars with Floating/Bouncing Motion */}
+                  <div className="flex flex-wrap items-center gap-3 py-1.5">
+                    {[
+                      { icon: <ChatGPTLogo className="w-4 h-4" />, name: "GPT-4o" },
+                      { icon: <AnthropicLogo className="w-4 h-4" />, name: "Claude" },
+                      { icon: <GeminiLogo className="w-4 h-4 text-sky-400" />, name: "Gemini" },
+                      { icon: <GrokLogo className="w-4 h-4" />, name: "Grok" },
+                      { icon: <DeepSeekLogo className="w-4 h-4 text-cyan-400" />, name: "DeepSeek" },
+                      { icon: <PerplexityLogo className="w-4 h-4 text-emerald-400" />, name: "Perplexity" },
+                      { icon: <MistralLogo className="w-4 h-4 text-orange-400" />, name: "Mistral" }
+                    ].map((avatar, idx) => (
+                      <motion.div 
+                        key={idx}
+                        whileHover={{ scale: 1.15, y: -2 }}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-[11px] font-medium ${
+                          settings.theme === 'dark'
+                            ? 'bg-zinc-800/80 border-zinc-700/50 hover:border-emerald-400'
+                            : 'bg-zinc-50 border-zinc-200 hover:border-emerald-400'
+                        }`}
+                      >
+                        {avatar.icon}
+                        <span className="opacity-90">{avatar.name}</span>
+                      </motion.div>
+                    ))}
+                    <div className="text-[11px] font-bold text-sky-400 animate-pulse px-1">
+                      + More
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-zinc-500/10 flex items-center justify-between">
+                  <span className="text-xs text-zinc-400">Unified Cost:</span>
+                  <div className="text-right">
+                    <span className="text-[11px] text-zinc-500 line-through block leading-none mr-1">₹11,400/mo</span>
+                    <span className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 leading-none">
+                      Just ₹49/mo
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Micro Interactivity: Sliding Carousel of Animated Model Cards */}
+            <div className="mt-10 overflow-hidden relative">
+              <div className="flex gap-4 animate-marquee whitespace-nowrap py-1">
+                {[
+                  "OpenAI GPT-4o Elite", "Anthropic Claude 3.5 Sonnet", "Google Gemini 1.5 Pro", 
+                  "xAI Grok 2 Reasoning", "Perplexity Deep Pro Search", "DeepSeek R1 Frontier", 
+                  "Mistral Large v2", "Meta Llama 3 405B"
+                ].map((tag, idx) => (
+                  <motion.div 
+                    key={idx}
+                    whileHover={{ scale: 1.05 }}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-semibold cursor-default ${
+                      settings.theme === 'dark'
+                        ? 'bg-zinc-900/60 border-white/5 text-zinc-300'
+                        : 'bg-zinc-100 border-zinc-200 text-zinc-700'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                    <span>{tag}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
           <div className="text-center space-y-3 max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">
               <Sparkles className="w-3 h-3 animate-spin text-amber-400" />
-              <span>Maximized AI Efficiency</span>
+              <span>Interactive ROI Metrics</span>
             </div>
             <h2 className="text-2xl md:text-5xl font-extrabold tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
               The Smart Way to Access Elite AI
@@ -331,7 +517,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             <p className={`text-xs md:text-base leading-relaxed ${
               settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'
             }`}>
-              Stop paying individual $20/month subscriptions. Access every frontier AI model, fully synchronized in a single supercharged panel for a fraction of the cost.
+              Compare your costs interactively below and discover how much you stand to save with Webnixo AI.
             </p>
           </div>
 

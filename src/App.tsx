@@ -252,11 +252,18 @@ export default function App() {
     if (window.location.pathname.startsWith('/auth/callback')) {
       const handlePopupCallback = async () => {
         try {
+          const isPopup = window.opener || window.name === 'google_oauth_popup';
           const { data: { session } } = await supabase.auth.getSession();
           if (session && session.user) {
             console.log('[Popup Callbacks] Session established. Posting message to opener.');
             if (window.opener) {
-              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+              try {
+                window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+              } catch (e) {
+                console.error('[Popup Callback] Failed to message opener:', e);
+              }
+            }
+            if (isPopup) {
               window.close();
             } else {
               window.location.href = '/';
@@ -266,7 +273,13 @@ export default function App() {
             const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
               if (session && session.user) {
                 if (window.opener) {
-                  window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+                  try {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+                  } catch (e) {
+                    console.error('[Popup Callback] Failed to message opener on state change:', e);
+                  }
+                }
+                if (isPopup) {
                   window.close();
                 } else {
                   window.location.href = '/';
@@ -276,12 +289,16 @@ export default function App() {
             });
             setTimeout(() => {
               subscription.unsubscribe();
-              window.close();
+              if (isPopup) {
+                window.close();
+              } else {
+                window.location.href = '/';
+              }
             }, 6000);
           }
         } catch (e) {
           console.error('[Popup Callback] Error finishing session:', e);
-          setTimeout(() => window.close(), 3000);
+          window.close();
         }
       };
       handlePopupCallback();
