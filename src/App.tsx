@@ -200,6 +200,47 @@ export default function App() {
 
   // Google OAuth Session Check & Message Event Listener
   useEffect(() => {
+    const isPopup = window.opener || window.name === 'google_oauth_popup';
+    if (isPopup) {
+      const checkAndClose = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session && session.user) {
+            console.log('[Popup Auto-Close] Logged in user detected inside popup. Closing window.');
+            try {
+              window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+            } catch (e) {
+              console.error('[Popup Auto-Close] Failed to message opener:', e);
+            }
+            window.close();
+          }
+        } catch (err) {
+          console.error('[Popup Auto-Close] Error checking session:', err);
+        }
+      };
+      
+      checkAndClose();
+      
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session && session.user) {
+          console.log('[Popup Auto-Close] Auth state change logged in inside popup. Closing window.');
+          try {
+            window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS' }, '*');
+          } catch (e) {
+            console.error('[Popup Auto-Close] Failed to message opener:', e);
+          }
+          window.close();
+        }
+      });
+      
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
+
+  // Google OAuth Session Check & Message Event Listener
+  useEffect(() => {
     // Check current active session on boot
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && session.user) {

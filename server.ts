@@ -1065,6 +1065,22 @@ async function startServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+    
+    // Explicit HTML fallback in development to guarantee no 404s on direct client route navigation!
+    app.get("*", async (req, res, next) => {
+      // Skip API routes, static assets, and anything with file extension
+      if (req.originalUrl.startsWith("/api/") || req.originalUrl.includes(".")) {
+        return next();
+      }
+      try {
+        const fs = await import("fs");
+        const template = fs.readFileSync(path.resolve(process.cwd(), "index.html"), "utf-8");
+        const html = await vite.transformIndexHtml(req.originalUrl, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      } catch (e) {
+        next(e);
+      }
+    });
   } else {
     console.log("Serving production build from dist...");
     const distPath = path.join(process.cwd(), "dist");

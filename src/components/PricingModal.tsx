@@ -128,7 +128,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         console.log('[Billing Sandbox] Gateway error caught. Auto-running sandbox simulation.');
         
         // Let's generate a simulated order on the client side directly if the backend had a gateway error
-        const simulatedOrderId = `sim_order_${amount}_${planId}_${btoa(userEmail).replace(/=/g, "")}_${Date.now()}`;
+        const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+        const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
         const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
         
         setIsProcessing(planId);
@@ -142,7 +143,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         // If the backend returned an explicit error (e.g. missing credentials) and offers a fallback or we can simulate it:
         if (orderData.canSimulate || !process.env.CASHFREE_APP_ID) {
           console.log('[Billing Sandbox] Active error returned, switching to secure sandbox simulation...');
-          const simulatedOrderId = `sim_order_${amount}_${planId}_${btoa(userEmail).replace(/=/g, "")}_${Date.now()}`;
+          const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+          const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
           const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
           
           setIsProcessing(planId);
