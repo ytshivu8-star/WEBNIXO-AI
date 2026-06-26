@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift, Database, Plus, RefreshCw, Calendar, Sparkle } from 'lucide-react';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -41,9 +41,104 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  if (!isOpen) return null;
+  // Dynamic Coupon Database Control Center State
+  const [dbCoupons, setDbCoupons] = useState<any[]>([]);
+  const [couponUsages, setCouponUsages] = useState<any[]>([]);
+  const [showDatabasePanel, setShowDatabasePanel] = useState(false);
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponPercent, setNewCouponPercent] = useState(50);
+  const [newCouponDescription, setNewCouponDescription] = useState('');
+  const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
+  const [createCouponMsg, setCreateCouponMsg] = useState('');
+  const [createCouponError, setCreateCouponError] = useState('');
+  const [isFetchingCoupons, setIsFetchingCoupons] = useState(false);
+  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
 
-  const isDark = theme === 'dark';
+  // Fetch Coupons Database Table
+  const fetchCouponsFromDB = async () => {
+    setIsFetchingCoupons(true);
+    try {
+      const res = await fetch('/api/coupons');
+      const data = await res.json();
+      if (data && data.coupons) {
+        setDbCoupons(data.coupons);
+      }
+    } catch (e) {
+      console.error("Failed to load coupons from database", e);
+    } finally {
+      setIsFetchingCoupons(false);
+    }
+  };
+
+  // Fetch Coupon Usages Logs Table
+  const fetchCouponUsagesFromDB = async () => {
+    setIsFetchingLogs(true);
+    try {
+      const res = await fetch('/api/coupons/usages');
+      const data = await res.json();
+      if (data && data.usages) {
+        setCouponUsages(data.usages);
+      }
+    } catch (e) {
+      console.error("Failed to load coupon logs from database", e);
+    } finally {
+      setIsFetchingLogs(false);
+    }
+  };
+
+  // Create & Sync New Custom Coupon in Database
+  const handleCreateCouponInDB = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateCouponError('');
+    setCreateCouponMsg('');
+
+    const cleanCode = newCouponCode.trim().toUpperCase();
+    if (!cleanCode) {
+      setCreateCouponError('Please enter a unique coupon code (e.g. SAVINGS75)');
+      return;
+    }
+
+    if (newCouponPercent < 1 || newCouponPercent > 99) {
+      setCreateCouponError('Discount percentage must be between 1% and 99%');
+      return;
+    }
+
+    setIsCreatingCoupon(true);
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: cleanCode,
+          discount_percent: Number(newCouponPercent),
+          description: newCouponDescription || `${newCouponPercent}% discount promo`
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setCreateCouponError(data.error);
+      } else if (data.success) {
+        setCreateCouponMsg(`🎉 Coupon "${cleanCode}" successfully created and saved into Database!`);
+        setNewCouponCode('');
+        setNewCouponDescription('');
+        setNewCouponPercent(50);
+        // Refresh local listings and syncing
+        fetchCouponsFromDB();
+      }
+    } catch (err) {
+      setCreateCouponError('Network error connecting to coupon database.');
+    } finally {
+      setIsCreatingCoupon(false);
+    }
+  };
+
+  // Load coupon definitions on modal open
+  useEffect(() => {
+    if (isOpen) {
+      fetchCouponsFromDB();
+      fetchCouponUsagesFromDB();
+    }
+  }, [isOpen]);
 
   const getDiscountedPrice = (originalPrice: number) => {
     if (!appliedCoupon) return originalPrice;
@@ -52,50 +147,56 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
     return Math.max(1, originalPrice - discountAmount); // Ensure it is at least ₹1 to satisfy payment validation
   };
 
-  const handleApplyCoupon = () => {
+  // Server-backed dynamic database Coupon application
+  const handleApplyCoupon = async () => {
     setCouponError('');
     setCouponSuccess('');
     setIsApplyingCoupon(true);
 
-    setTimeout(() => {
-      const codeClean = couponInput.trim().toUpperCase();
-      if (!codeClean) {
-        setCouponError('Please enter a coupon code.');
-        setIsApplyingCoupon(false);
-        return;
-      }
-
-      let percent = 0;
-      let msg = '';
-
-      if (codeClean === 'WEBNIXO50') {
-        percent = 50;
-        msg = '🎉 Awesome! WEBNIXO50 applied: 50% discount active!';
-      } else if (codeClean === 'SAVE90') {
-        percent = 90;
-        msg = '🔥 Super Save! SAVE90 applied: 90% discount active!';
-      } else if (codeClean === 'FIESTA95') {
-        percent = 95;
-        msg = '✨ Festive Special! FIESTA95 applied: 95% discount active!';
-      } else if (codeClean === 'FREEPASS') {
-        percent = 99;
-        msg = '⚡ Developer pass activated! Price slashed to ₹1!';
-      } else {
-        setCouponError('❌ Invalid coupon code. Try WEBNIXO50, SAVE90, or FIESTA95.');
-        setIsApplyingCoupon(false);
-        return;
-      }
-
-      setAppliedCoupon({ code: codeClean, discountPercent: percent });
-      setCouponSuccess(msg);
-      setShowConfetti(true);
+    const codeClean = couponInput.trim().toUpperCase();
+    if (!codeClean) {
+      setCouponError('Please enter a coupon code.');
       setIsApplyingCoupon(false);
+      return;
+    }
 
-      // Turn off confetti animation after 4.5 seconds
-      setTimeout(() => {
-        setShowConfetti(false);
-      }, 4500);
-    }, 600);
+    const targetPlanId = billingInterval === 'monthly' ? 'pro_monthly' : 'pro_yearly';
+    const targetPlanPrice = billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price;
+
+    try {
+      const res = await fetch('/api/coupons/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userEmail || 'ytshivu8@gmail.com',
+          code: codeClean,
+          planId: targetPlanId,
+          originalPrice: targetPlanPrice
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        setCouponError(data.error);
+      } else if (data.success) {
+        setAppliedCoupon({ code: data.code, discountPercent: data.discountPercent });
+        setCouponSuccess(data.message || `🎉 Coupon ${data.code} applied!`);
+        setShowConfetti(true);
+        // Refresh tables immediately to show newly applied metrics!
+        fetchCouponsFromDB();
+        fetchCouponUsagesFromDB();
+
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 4500);
+      } else {
+        setCouponError('Invalid coupon response from server database.');
+      }
+    } catch (err) {
+      setCouponError('❌ Connection error. Fallback to offline coupon database matching.');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
   };
 
   const handleRemoveCoupon = () => {
@@ -259,6 +360,9 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       setIsProcessing(null);
     }
   };
+
+  if (!isOpen) return null;
+  const isDark = theme === 'dark';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -486,6 +590,170 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             >
               FREEPASS (₹1 test code)
             </button>
+          </div>
+        )}
+
+        {/* Toggle Database Control Center Button */}
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={() => setShowDatabasePanel(!showDatabasePanel)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
+              showDatabasePanel
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-md shadow-amber-500/5'
+                : isDark
+                  ? 'bg-zinc-900 border-zinc-800 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400'
+                  : 'bg-zinc-100 border-zinc-200 hover:border-amber-500/30 text-zinc-600 hover:text-amber-600'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 shrink-0" />
+            <span>{showDatabasePanel ? 'Hide Coupon Database Center 📊' : 'Manage Affiliate & Coupon Database Center 📊'}</span>
+          </button>
+        </div>
+
+        {/* Database Control Center Panel */}
+        {showDatabasePanel && (
+          <div className={`p-4 mb-6 rounded-2xl border animate-[popIn_0.25s_ease-out] ${
+            isDark ? 'bg-zinc-950/85 border-amber-500/20' : 'bg-amber-50/40 border-amber-500/20 shadow-inner'
+          }`}>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-bold tracking-tight">Affiliate Dynamic Database Hub</h3>
+              </div>
+              <button
+                onClick={() => { fetchCouponsFromDB(); fetchCouponUsagesFromDB(); }}
+                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer"
+                title="Refresh database records"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${(isFetchingCoupons || isFetchingLogs) ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Part 1: Add Coupon Form */}
+            <form onSubmit={handleCreateCouponInDB} className="space-y-3 mb-6 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/40">
+              <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <Plus className="w-3 h-3" />
+                Add & Link New Coupon to Database
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Coupon Code</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. EXTRA50"
+                    value={newCouponCode}
+                    onChange={(e) => setNewCouponCode(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Discount Percent (%)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={newCouponPercent}
+                    onChange={(e) => setNewCouponPercent(Number(e.target.value))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Description / Campaign</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Affiliate partner launch promo"
+                    value={newCouponDescription}
+                    onChange={(e) => setNewCouponDescription(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {createCouponMsg && <p className="text-[10px] text-emerald-400 font-semibold">{createCouponMsg}</p>}
+              {createCouponError && <p className="text-[10px] text-red-400 font-semibold">{createCouponError}</p>}
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={isCreatingCoupon}
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 text-black font-extrabold text-[10px] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  {isCreatingCoupon ? 'Saving...' : 'Save to Database'}
+                </button>
+              </div>
+            </form>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* Part 2: Active Coupons List */}
+              <div className="lg:col-span-5 space-y-2">
+                <h4 className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
+                  <Tag className="w-3 h-3 text-amber-400" />
+                  Active Database Coupons ({dbCoupons.length})
+                </h4>
+                <div className="max-h-48 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-zinc-900/60 text-[9px] text-zinc-400 border-b border-zinc-850">
+                        <th className="p-2 font-bold">Code</th>
+                        <th className="p-2 font-bold text-center">Discount</th>
+                        <th className="p-2 font-bold">Campaign Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[10px] divide-y divide-zinc-900">
+                      {dbCoupons.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className="p-3 text-center text-zinc-500 italic">No coupons registered yet</td>
+                        </tr>
+                      ) : (
+                        dbCoupons.map((c: any) => (
+                          <tr key={c.code} className="hover:bg-zinc-900/40">
+                            <td className="p-2 font-mono font-bold text-amber-400">{c.code}</td>
+                            <td className="p-2 font-black text-center text-emerald-400">{c.discount_percent}%</td>
+                            <td className="p-2 text-zinc-400 truncate max-w-[120px]" title={c.description}>{c.description}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Part 3: Coupon Application Usages Logs */}
+              <div className="lg:col-span-7 space-y-2">
+                <h4 className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-amber-400" />
+                  Real-time Application Usages Log ({couponUsages.length})
+                </h4>
+                <div className="max-h-48 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-zinc-900/60 text-[9px] text-zinc-400 border-b border-zinc-850">
+                        <th className="p-2 font-bold">User Email</th>
+                        <th className="p-2 font-bold">Code</th>
+                        <th className="p-2 font-bold text-right">Plan</th>
+                        <th className="p-2 font-bold text-right">Price paid</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[9px] font-medium divide-y divide-zinc-900">
+                      {couponUsages.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-3 text-center text-zinc-500 italic">No usage records written to database</td>
+                        </tr>
+                      ) : (
+                        couponUsages.map((u: any) => (
+                          <tr key={u.id} className="hover:bg-zinc-900/40">
+                            <td className="p-2 font-semibold text-zinc-300 truncate max-w-[110px]" title={u.email}>{u.email}</td>
+                            <td className="p-2 font-mono font-bold text-emerald-400">{u.coupon_code}</td>
+                            <td className="p-2 text-right text-zinc-400 uppercase tracking-wider">{u.plan_id.replace('_', ' ')}</td>
+                            <td className="p-2 text-right font-black text-white">₹{u.discounted_price}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

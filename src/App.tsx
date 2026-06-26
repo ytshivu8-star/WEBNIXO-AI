@@ -197,6 +197,18 @@ export default function App() {
     // Check premium status on login
     checkPremiumStatus(email);
 
+    // Sync user profile to backend database asynchronously
+    fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        name: name || "Anonymous User",
+        theme: settings.theme,
+        credits: creditsRemaining
+      })
+    }).catch(err => console.error("Profile DB sync skipped:", err));
+
     // Auto-create a chat if there's none
     if (chats.length === 0) {
       const newId = `chat-${Date.now()}`;

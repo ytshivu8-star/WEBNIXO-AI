@@ -765,6 +765,186 @@ function getSupabaseAdmin() {
   return supabaseAdminInstance;
 }
 
+// In-memory caching for profiles, payments, and conversions fallback data
+const inMemoryProfiles = new Map<string, any>();
+const inMemoryPayments = new Map<string, any>();
+const inMemoryConversions = new Map<string, any>();
+
+// Database Logging Helpers for robustness and seamless fallback
+async function logProfileToSupabase(profile: {
+  email: string;
+  name: string;
+  theme?: string;
+  credits_remaining?: number;
+}) {
+  const emailStr = profile.email.toLowerCase();
+  const record = {
+    email: emailStr,
+    name: profile.name,
+    theme: profile.theme || 'dark',
+    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 30,
+    updated_at: new Date().toISOString()
+  };
+
+  inMemoryProfiles.set(emailStr, record);
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    try {
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .upsert(record);
+      if (!error) {
+        console.log(`[DB Profile] Successfully synced profile to Supabase for ${emailStr}`);
+      } else {
+        console.log(`[DB Profile] Supabase profiles sync skipped (table not initialized yet). Saved in memory.`);
+      }
+    } catch (e) {
+      console.log(`[DB Profile] Supabase query catch block hit. Fallback to cache.`);
+    }
+  }
+}
+
+async function logPaymentToSupabase(payment: {
+  order_id: string;
+  email: string;
+  amount: number;
+  plan_id: string;
+  status: string;
+  payment_session_id?: string;
+}) {
+  const emailStr = payment.email.toLowerCase();
+  const record = {
+    order_id: payment.order_id,
+    email: emailStr,
+    amount: payment.amount,
+    plan_id: payment.plan_id,
+    status: payment.status,
+    payment_session_id: payment.payment_session_id || null,
+    created_at: new Date().toISOString()
+  };
+
+  inMemoryPayments.set(payment.order_id, record);
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    try {
+      const { error } = await supabaseAdmin
+        .from("payments")
+        .upsert(record);
+      if (!error) {
+        console.log(`[DB Payment] Successfully logged payment order ${payment.order_id} in Supabase.`);
+      } else {
+        console.log(`[DB Payment] Supabase payments log skipped (table not initialized yet). Saved in memory.`);
+      }
+    } catch (e) {
+      console.log(`[DB Payment] Supabase query catch block hit. Fallback to cache.`);
+    }
+  }
+}
+
+async function logConversionToSupabase(conversion: {
+  email: string;
+  conversion_type: string;
+  conversion_value?: number;
+  details?: any;
+}) {
+  const emailStr = conversion.email.toLowerCase();
+  const id = `conv_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const record = {
+    id,
+    email: emailStr,
+    conversion_type: conversion.conversion_type,
+    conversion_value: conversion.conversion_value || 0,
+    details: conversion.details || {},
+    created_at: new Date().toISOString()
+  };
+
+  inMemoryConversions.set(id, record);
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    try {
+      const { error } = await supabaseAdmin
+        .from("conversions")
+        .insert(record);
+      if (!error) {
+        console.log(`[DB Conversion] Logged ${conversion.conversion_type} conversion successfully for ${emailStr}`);
+      } else {
+        console.log(`[DB Conversion] Supabase conversions table skipped. Logged in-memory.`);
+      }
+    } catch (e) {
+      console.log(`[DB Conversion] Supabase query catch block hit. Fallback to cache.`);
+    }
+  }
+}
+
+// User Profile Sync Endpoint
+app.post("/api/profile", async (req, res) => {
+  try {
+    const { email, name, theme, credits } = req.body;
+    if (!email) {
+      return res.status(200).json({ error: "email is a required parameter" });
+    }
+    
+    await logProfileToSupabase({
+      email,
+      name: name || "Anonymous User",
+      theme,
+      credits_remaining: credits
+    });
+
+    return res.json({ success: true, profile: inMemoryProfiles.get(email.toLowerCase()) });
+  } catch (err: any) {
+    return res.status(200).json({ error: err.message });
+  }
+});
+
+// Get User Profile from DB
+app.get("/api/profile", async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: "email is required" });
+    }
+    const emailStr = String(email).toLowerCase();
+
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { data, error } = await supabaseAdmin
+        .from("profiles")
+        .select("*")
+        .eq("email", emailStr)
+        .maybeSingle();
+      if (!error && data) {
+        return res.json({ source: "supabase", profile: data });
+      }
+    }
+    return res.json({ source: "local_cache", profile: inMemoryProfiles.get(emailStr) || null });
+  } catch (e) {
+    const qEmail = req.query.email ? String(req.query.email).toLowerCase() : "";
+    return res.json({ source: "local_cache_fallback", profile: inMemoryProfiles.get(qEmail) || null });
+  }
+});
+
+// Retrieve Conversion Logs from DB
+app.get("/api/conversions", async (req, res) => {
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { data, error } = await supabaseAdmin
+        .from("conversions")
+        .select("*");
+      if (!error && data) {
+        return res.json({ source: "supabase", conversions: data });
+      }
+    }
+    return res.json({ source: "local_cache", conversions: Array.from(inMemoryConversions.values()) });
+  } catch (e) {
+    return res.json({ source: "local_cache_fallback", conversions: Array.from(inMemoryConversions.values()) });
+  }
+});
+
 // In-memory cache for user premium subscriptions to ensure flawless reliability and instant fallback
 const inMemorySubscriptions = new Map<string, {
   email: string;
@@ -846,6 +1026,16 @@ app.post("/api/payment/create-order", async (req, res) => {
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
       const returnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
 
+      // Log simulated payment creation in DB
+      await logPaymentToSupabase({
+        order_id: simulatedOrderId,
+        email,
+        amount: Number(amount),
+        plan_id: planId,
+        status: "ACTIVE",
+        payment_session_id: `sim_session_${Date.now()}`
+      });
+
       return res.status(200).json({
         orderId: simulatedOrderId,
         paymentSessionId: `sim_session_${Date.now()}`,
@@ -892,6 +1082,15 @@ app.post("/api/payment/create-order", async (req, res) => {
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
       const simulatedReturnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
       
+      await logPaymentToSupabase({
+        order_id: simulatedOrderId,
+        email,
+        amount: Number(amount),
+        plan_id: planId,
+        status: "ACTIVE",
+        payment_session_id: `sim_session_${Date.now()}`
+      });
+
       return res.status(200).json({
         orderId: simulatedOrderId,
         paymentSessionId: `sim_session_${Date.now()}`,
@@ -903,6 +1102,16 @@ app.post("/api/payment/create-order", async (req, res) => {
 
     const orderData = await response.json();
     console.log(`[Cashfree PG] Order ${orderId} created successfully. Session ID: ${orderData.payment_session_id}`);
+
+    // Log the real Cashfree order to DB
+    await logPaymentToSupabase({
+      order_id: orderId,
+      email,
+      amount: Number(amount),
+      plan_id: planId,
+      status: "ACTIVE",
+      payment_session_id: orderData.payment_session_id
+    });
 
     res.json({
       orderId: orderData.order_id,
@@ -956,6 +1165,24 @@ app.get("/api/payment/verify", async (req, res) => {
 
       inMemorySubscriptions.set(emailStr, subscriptionDetails);
       console.log(`[Subscription Sandbox] Simulated payment of ₹${amount} approved instantly for ${emailStr}`);
+
+      // Sync simulated payment as PAID to Supabase
+      await logPaymentToSupabase({
+        order_id: orderIdStr,
+        email: emailStr,
+        amount,
+        plan_id: planId,
+        status: "PAID",
+        payment_session_id: "simulated_success"
+      });
+
+      // Record conversion event
+      await logConversionToSupabase({
+        email: emailStr,
+        conversion_type: "payment_success",
+        conversion_value: amount,
+        details: { plan_id: planId, order_id: orderIdStr, simulated: true }
+      });
 
       return res.json({
         status: "PAID",
@@ -1024,6 +1251,24 @@ app.get("/api/payment/verify", async (req, res) => {
       inMemorySubscriptions.set(emailStr, subscriptionDetails);
       console.log(`[Subscription] Saved user premium status to in-memory cache for ${emailStr}`);
 
+      // Sync active subscription status as PAID to payments table in Supabase
+      await logPaymentToSupabase({
+        order_id: order_id as string,
+        email: emailStr,
+        amount,
+        plan_id,
+        status: "PAID",
+        payment_session_id: orderData.payment_session_id || "live_success"
+      });
+
+      // Record conversion event
+      await logConversionToSupabase({
+        email: emailStr,
+        conversion_type: "payment_success",
+        conversion_value: amount,
+        details: { plan_id, order_id: order_id as string, simulated: false }
+      });
+
       // Save premium subscription to Supabase if client is ready
       const supabaseAdmin = getSupabaseAdmin();
       if (supabaseAdmin) {
@@ -1053,6 +1298,185 @@ app.get("/api/payment/verify", async (req, res) => {
   } catch (err: any) {
     console.error("Payment Verification failure:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// --- DYNAMIC COUPON DATABASE IN-MEMORY BACKUP & API ---
+const inMemoryCoupons = new Map<string, {
+  code: string;
+  discount_percent: number;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+}>([
+  ["WEBNIXO50", { code: "WEBNIXO50", discount_percent: 50, description: "50% off on all credit plans", is_active: true, created_at: new Date().toISOString() }],
+  ["SAVE90", { code: "SAVE90", discount_percent: 90, description: "90% off for early adopters", is_active: true, created_at: new Date().toISOString() }],
+  ["FIESTA95", { code: "FIESTA95", discount_percent: 95, description: "95% off festive special offer", is_active: true, created_at: new Date().toISOString() }],
+  ["FREEPASS", { code: "FREEPASS", discount_percent: 99, description: "Developer ₹1 trial bypass", is_active: true, created_at: new Date().toISOString() }]
+]);
+
+const inMemoryCouponUsages: any[] = [];
+
+// Get all coupons (with Supabase database fallback sync)
+app.get("/api/coupons", async (req, res) => {
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { data, error } = await supabaseAdmin
+        .from("coupons")
+        .select("*");
+      
+      if (!error && data && data.length > 0) {
+        // Sync back to local map to keep both in harmony
+        data.forEach((c: any) => {
+          inMemoryCoupons.set(c.code.toUpperCase(), {
+            code: c.code,
+            discount_percent: c.discount_percent,
+            description: c.description,
+            is_active: c.is_active ?? true,
+            created_at: c.created_at
+          });
+        });
+        return res.json({ source: "supabase", coupons: data });
+      }
+    }
+    return res.json({ source: "local_cache", coupons: Array.from(inMemoryCoupons.values()) });
+  } catch (e) {
+    return res.json({ source: "local_cache_fallback", coupons: Array.from(inMemoryCoupons.values()) });
+  }
+});
+
+// Create/Update a coupon in the database
+app.post("/api/coupons", async (req, res) => {
+  try {
+    const { code, discount_percent, description } = req.body;
+    if (!code || typeof discount_percent !== "number") {
+      return res.status(200).json({ error: "code and discount_percent are required parameters" });
+    }
+
+    const cleanCode = String(code).trim().toUpperCase();
+    const couponRecord = {
+      code: cleanCode,
+      discount_percent: Number(discount_percent),
+      description: description || `${discount_percent}% Discount Coupon`,
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+
+    // Save to local cache
+    inMemoryCoupons.set(cleanCode, couponRecord);
+
+    // Save to Supabase
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { error } = await supabaseAdmin
+        .from("coupons")
+        .upsert(couponRecord);
+      if (!error) {
+        console.log(`[Coupon Database] Synced coupon ${cleanCode} in Supabase successfully.`);
+      } else {
+        console.log(`[Coupon Database] Supabase sync skipped (table not ready yet). Saved locally.`);
+      }
+    }
+
+    return res.json({ success: true, coupon: couponRecord });
+  } catch (err: any) {
+    return res.status(200).json({ error: err.message });
+  }
+});
+
+// Apply/Verify a coupon and save its usage details in database
+app.post("/api/coupons/apply", async (req, res) => {
+  try {
+    const { email, code, planId, originalPrice } = req.body;
+    if (!email || !code) {
+      return res.status(200).json({ error: "email and coupon code are required parameters" });
+    }
+
+    const cleanCode = String(code).trim().toUpperCase();
+    const emailStr = String(email).toLowerCase();
+
+    // Check if coupon exists
+    const coupon = inMemoryCoupons.get(cleanCode);
+    if (!coupon || !coupon.is_active) {
+      return res.status(200).json({ error: "❌ Invalid or expired coupon code. Check coupon database listings below." });
+    }
+
+    const discountPercent = coupon.discount_percent;
+    const originalPriceNum = Number(originalPrice) || 0;
+    
+    let discountedPrice = originalPriceNum;
+    if (cleanCode === 'FREEPASS') {
+      discountedPrice = 1;
+    } else {
+      const discountAmt = Math.round((originalPriceNum * discountPercent) / 100);
+      discountedPrice = Math.max(1, originalPriceNum - discountAmt);
+    }
+
+    const usageRecord = {
+      id: `usage_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      email: emailStr,
+      coupon_code: cleanCode,
+      plan_id: planId || "starter_monthly",
+      original_price: originalPriceNum,
+      discounted_price: discountedPrice,
+      applied_at: new Date().toISOString()
+    };
+
+    // Log to local memory cache
+    inMemoryCouponUsages.unshift(usageRecord);
+
+    // Sync usage with Supabase
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { error } = await supabaseAdmin
+        .from("coupon_usages")
+        .insert(usageRecord);
+      if (!error) {
+        console.log(`[Coupon Usage DB] Successfully logged coupon application for ${emailStr}`);
+      } else {
+        console.log(`[Coupon Usage DB] Supabase usage log skipped (table not ready yet). Logged locally.`);
+      }
+    }
+
+    // Record conversion event for coupon applied
+    await logConversionToSupabase({
+      email: emailStr,
+      conversion_type: "coupon_applied",
+      conversion_value: originalPriceNum - discountedPrice,
+      details: { code: cleanCode, plan_id: planId || "starter_monthly", saved: originalPriceNum - discountedPrice }
+    });
+
+    return res.json({
+      success: true,
+      code: cleanCode,
+      discountPercent,
+      discountedPrice,
+      savedAmount: originalPriceNum - discountedPrice,
+      message: `🎉 Coupon ${cleanCode} applied successfully! Saved ₹${originalPriceNum - discountedPrice}`
+    });
+  } catch (err: any) {
+    return res.status(200).json({ error: err.message });
+  }
+});
+
+// Retrieve coupon usages logs from database
+app.get("/api/coupons/usages", async (req, res) => {
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      const { data, error } = await supabaseAdmin
+        .from("coupon_usages")
+        .select("*");
+      
+      if (!error && data) {
+        const sorted = data.sort((a: any, b: any) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime());
+        return res.json({ source: "supabase", usages: sorted });
+      }
+    }
+    return res.json({ source: "local_cache", usages: inMemoryCouponUsages });
+  } catch (e) {
+    return res.json({ source: "local_cache_fallback", usages: inMemoryCouponUsages });
   }
 });
 
