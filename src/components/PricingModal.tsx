@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard } from 'lucide-react';
+import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift } from 'lucide-react';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -33,9 +33,77 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
   const [isProcessing, setIsProcessing] = useState<string | null>(null); // holds planId during processing
   const [error, setError] = useState('');
 
+  // Coupon state engine
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   if (!isOpen) return null;
 
   const isDark = theme === 'dark';
+
+  const getDiscountedPrice = (originalPrice: number) => {
+    if (!appliedCoupon) return originalPrice;
+    if (appliedCoupon.code === 'FREEPASS') return 1; // Special ₹1 bypass for developer trials and easy tests!
+    const discountAmount = Math.round((originalPrice * appliedCoupon.discountPercent) / 100);
+    return Math.max(1, originalPrice - discountAmount); // Ensure it is at least ₹1 to satisfy payment validation
+  };
+
+  const handleApplyCoupon = () => {
+    setCouponError('');
+    setCouponSuccess('');
+    setIsApplyingCoupon(true);
+
+    setTimeout(() => {
+      const codeClean = couponInput.trim().toUpperCase();
+      if (!codeClean) {
+        setCouponError('Please enter a coupon code.');
+        setIsApplyingCoupon(false);
+        return;
+      }
+
+      let percent = 0;
+      let msg = '';
+
+      if (codeClean === 'WEBNIXO50') {
+        percent = 50;
+        msg = '🎉 Awesome! WEBNIXO50 applied: 50% discount active!';
+      } else if (codeClean === 'SAVE90') {
+        percent = 90;
+        msg = '🔥 Super Save! SAVE90 applied: 90% discount active!';
+      } else if (codeClean === 'FIESTA95') {
+        percent = 95;
+        msg = '✨ Festive Special! FIESTA95 applied: 95% discount active!';
+      } else if (codeClean === 'FREEPASS') {
+        percent = 99;
+        msg = '⚡ Developer pass activated! Price slashed to ₹1!';
+      } else {
+        setCouponError('❌ Invalid coupon code. Try WEBNIXO50, SAVE90, or FIESTA95.');
+        setIsApplyingCoupon(false);
+        return;
+      }
+
+      setAppliedCoupon({ code: codeClean, discountPercent: percent });
+      setCouponSuccess(msg);
+      setShowConfetti(true);
+      setIsApplyingCoupon(false);
+
+      // Turn off confetti animation after 4.5 seconds
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4500);
+    }, 600);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponSuccess('');
+    setCouponError('');
+    setCouponInput('');
+  };
 
   const plans = {
     starter: {
@@ -194,6 +262,30 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      {/* Self-contained high-fidelity hardware-accelerated confetti and bounce animations */}
+      <style>{`
+        @keyframes fall {
+          0% { transform: translateY(-30px) rotate(0deg); opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(650px) rotate(720deg); opacity: 0; }
+        }
+        @keyframes sway {
+          0% { margin-left: -35px; }
+          100% { margin-left: 35px; }
+        }
+        @keyframes popIn {
+          0% { transform: scale(0.9); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .coupon-pulse {
+          animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+      `}</style>
+
       {/* Backdrop */}
       <div 
         onClick={onClose}
@@ -201,11 +293,41 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       />
 
       {/* Modal Container */}
-      <div className={`relative w-full max-w-3xl p-6 md:p-8 rounded-3xl border shadow-2xl transition-all scale-100 z-50 my-8 ${
+      <div className={`relative w-full max-w-3xl p-6 md:p-8 rounded-3xl border shadow-2xl transition-all scale-100 z-50 my-8 overflow-hidden ${
         isDark 
           ? 'bg-[#1a1a1a] border-zinc-800 text-zinc-100' 
           : 'bg-white border-zinc-200 text-zinc-900'
       }`}>
+        
+        {/* Satisfying Confetti Sprinkles on Successful Coupon Application */}
+        {showConfetti && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-50 rounded-3xl">
+            {Array.from({ length: 60 }).map((_, i) => {
+              const left = `${Math.random() * 100}%`;
+              const delay = `${Math.random() * 1.5}s`;
+              const duration = `${1.8 + Math.random() * 2.2}s`;
+              const colors = ['#10b981', '#0ea5e9', '#ec4899', '#f59e0b', '#8b5cf6', '#3b82f6', '#14b8a6'];
+              const bg = colors[i % colors.length];
+              const size = `${6 + Math.random() * 10}px`;
+              const shapeClass = i % 3 === 0 ? 'rounded-full' : i % 3 === 1 ? 'rotate-45' : 'rounded-sm';
+              return (
+                <div
+                  key={i}
+                  className={`absolute top-0 ${shapeClass}`}
+                  style={{
+                    left,
+                    backgroundColor: bg,
+                    width: size,
+                    height: size,
+                    animation: `fall ${duration} linear ${delay} infinite, sway ${duration} ease-in-out ${delay} infinite alternate`,
+                    opacity: 0.9,
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -217,7 +339,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         </button>
 
         {/* Title */}
-        <div className="text-center space-y-2 mb-6">
+        <div className="text-center space-y-2 mb-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             <span>WEBNIXO CREDIT PLANS</span>
@@ -228,36 +350,144 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           </p>
         </div>
 
-        {/* Selector Toggle */}
-        <div className="flex justify-center mb-6">
-          <div className={`p-1 rounded-2xl flex gap-1 border max-w-xs w-full ${
-            isDark ? 'bg-black/40 border-white/5' : 'bg-zinc-100 border-zinc-200'
-          }`}>
-            <button
-              onClick={() => setBillingInterval('monthly')}
-              className={`flex-1 py-1.5 rounded-xl font-bold text-xs transition-all ${
-                billingInterval === 'monthly'
-                  ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm')
-                  : (isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')
-              }`}
-            >
-              Monthly Billing
-            </button>
-            <button
-              onClick={() => setBillingInterval('yearly')}
-              className={`flex-1 py-1.5 rounded-xl font-bold text-xs transition-all relative ${
-                billingInterval === 'yearly'
-                  ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm')
-                  : (isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')
-              }`}
-            >
-              Yearly Billing
-              <span className="absolute -top-3.5 -right-2 bg-emerald-500 text-white text-[7px] font-black uppercase px-1 rounded-full shadow-md">
-                Save ~16%
-              </span>
-            </button>
+        {/* Selector Toggle & Coupon Code Row */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5 items-center">
+          
+          {/* Selector Toggle */}
+          <div className="col-span-1 md:col-span-5 flex justify-center">
+            <div className={`p-1 rounded-2xl flex gap-1 border w-full ${
+              isDark ? 'bg-black/40 border-white/5' : 'bg-zinc-100 border-zinc-200'
+            }`}>
+              <button
+                onClick={() => setBillingInterval('monthly')}
+                className={`flex-1 py-1.5 rounded-xl font-bold text-xs transition-all ${
+                  billingInterval === 'monthly'
+                    ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm')
+                    : (isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')
+                }`}
+              >
+                Monthly Billing
+              </button>
+              <button
+                onClick={() => setBillingInterval('yearly')}
+                className={`flex-1 py-1.5 rounded-xl font-bold text-xs transition-all relative ${
+                  billingInterval === 'yearly'
+                    ? (isDark ? 'bg-zinc-800 text-white' : 'bg-white text-zinc-900 shadow-sm')
+                    : (isDark ? 'text-zinc-400 hover:text-white' : 'text-zinc-500 hover:text-zinc-900')
+                }`}
+              >
+                Yearly Billing
+                <span className="absolute -top-3.5 -right-2 bg-emerald-500 text-white text-[7px] font-black uppercase px-1 rounded-full shadow-md">
+                  Save ~16%
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Coupon Code Field */}
+          <div className="col-span-1 md:col-span-7">
+            <div className={`p-1.5 rounded-2xl border flex items-center gap-2 ${
+              appliedCoupon 
+                ? 'border-emerald-500/50 bg-emerald-500/5' 
+                : isDark ? 'bg-zinc-900/60 border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+            }`}>
+              <div className="pl-2 flex items-center text-zinc-400">
+                <Tag className={`w-3.5 h-3.5 ${appliedCoupon ? 'text-emerald-400 animate-bounce' : ''}`} />
+              </div>
+              
+              <input
+                type="text"
+                placeholder={appliedCoupon ? `Active: ${appliedCoupon.code}` : "Promo code (e.g. WEBNIXO50)"}
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                disabled={!!appliedCoupon || isApplyingCoupon}
+                className="bg-transparent border-0 outline-none p-0 text-xs font-bold tracking-wide w-full focus:ring-0 placeholder:text-zinc-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleApplyCoupon();
+                  }
+                }}
+              />
+
+              {appliedCoupon ? (
+                <button
+                  onClick={handleRemoveCoupon}
+                  className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  onClick={handleApplyCoupon}
+                  disabled={isApplyingCoupon}
+                  className={`px-4 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wide transition-all cursor-pointer ${
+                    isApplyingCoupon
+                      ? 'bg-zinc-800 text-zinc-500'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-white'
+                  }`}
+                >
+                  {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Coupon Success / Error Feedbacks */}
+        {couponSuccess && (
+          <div className="p-2.5 mb-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] text-center font-bold flex items-center justify-center gap-1.5 animate-[popIn_0.3s_ease-out] relative overflow-hidden">
+            <span className="relative z-10 flex items-center gap-1">
+              <Gift className="w-3.5 h-3.5 animate-bounce shrink-0" />
+              {couponSuccess}
+            </span>
+            <div className="absolute top-0 right-0 h-full w-24 bg-gradient-to-r from-transparent to-emerald-400/5 animate-pulse" />
+          </div>
+        )}
+
+        {couponError && (
+          <div className="p-2.5 mb-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] text-center font-semibold animate-shake">
+            {couponError}
+          </div>
+        )}
+
+        {/* Quick Suggestion Presets to spark interest and satisfaction */}
+        {!appliedCoupon && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4 text-[10px]">
+            <span className="text-zinc-500 font-medium">👉 Try:</span>
+            <button
+              onClick={() => { setCouponInput('WEBNIXO50'); setTimeout(handleApplyCoupon, 100); }}
+              className={`px-2 py-0.5 rounded-full font-bold border transition-all cursor-pointer ${
+                isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:border-emerald-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-emerald-600 hover:border-emerald-300'
+              }`}
+            >
+              WEBNIXO50 (50% Off)
+            </button>
+            <button
+              onClick={() => { setCouponInput('SAVE90'); setTimeout(handleApplyCoupon, 100); }}
+              className={`px-2 py-0.5 rounded-full font-bold border transition-all cursor-pointer ${
+                isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-sky-400 hover:border-sky-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-sky-600 hover:border-sky-300'
+              }`}
+            >
+              SAVE90 (90% Off)
+            </button>
+            <button
+              onClick={() => { setCouponInput('FIESTA95'); setTimeout(handleApplyCoupon, 100); }}
+              className={`px-2 py-0.5 rounded-full font-bold border transition-all cursor-pointer ${
+                isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-purple-400 hover:border-purple-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-purple-600 hover:border-purple-300'
+              }`}
+            >
+              FIESTA95 (95% Off)
+            </button>
+            <button
+              onClick={() => { setCouponInput('FREEPASS'); setTimeout(handleApplyCoupon, 100); }}
+              className={`px-2 py-0.5 rounded-full font-bold border border-dashed transition-all cursor-pointer ${
+                isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-amber-400 hover:border-amber-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-amber-600 hover:border-amber-300'
+              }`}
+            >
+              FREEPASS (₹1 test code)
+            </button>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -269,11 +499,17 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         {/* Two Plan Columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* STARTER CARD */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
             isDark 
               ? 'bg-neutral-900/40 border-white/5 hover:border-emerald-500/20' 
               : 'bg-zinc-50 border-zinc-200 hover:shadow-lg'
           }`}>
+            {appliedCoupon && (
+              <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm">
+                -{appliedCoupon.discountPercent}% OFF
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div className="space-y-1">
                 <h4 className="text-base font-black tracking-tight">{plans.starter.name}</h4>
@@ -283,11 +519,31 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
               </div>
 
               <div className="pt-2">
-                <div className="text-3xl font-black text-emerald-400">
-                  ₹{billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price}
-                  <span className="text-xs font-normal opacity-60"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
+                <div className="text-3xl font-black text-emerald-400 flex items-baseline flex-wrap gap-1.5">
+                  {appliedCoupon ? (
+                    <>
+                      <span className="text-zinc-500 line-through text-lg font-bold">
+                        ₹{billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price}
+                      </span>
+                      <span>
+                        ₹{getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)}
+                      </span>
+                    </>
+                  ) : (
+                    <span>
+                      ₹{billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price}
+                    </span>
+                  )}
+                  <span className="text-xs font-normal text-zinc-500"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
                 </div>
-                {billingInterval === 'yearly' && (
+                
+                {appliedCoupon && (
+                  <span className="inline-block text-[9px] font-black uppercase text-emerald-400 bg-emerald-400/10 border border-emerald-500/20 px-1.5 py-0.5 rounded mt-1.5">
+                    Saved ₹{(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price) - getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)} with {appliedCoupon.code}!
+                  </span>
+                )}
+                
+                {billingInterval === 'yearly' && !appliedCoupon && (
                   <span className="inline-block text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/25 mt-1 animate-pulse">
                     {plans.starter.yearly.savings}
                   </span>
@@ -324,7 +580,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             <button
               onClick={() => handleCheckout(
                 billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id,
-                billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price
+                getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)
               )}
               disabled={isProcessing !== null}
               className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -348,11 +604,16 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           </div>
 
           {/* PRO CARD */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative ${
+          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
             isDark 
               ? 'bg-neutral-900/70 border-sky-500/20 hover:border-sky-500/40' 
               : 'bg-sky-50/10 border-sky-500/20 hover:shadow-lg'
           }`}>
+            {appliedCoupon && (
+              <div className="absolute top-0 right-0 bg-sky-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm z-10">
+                -{appliedCoupon.discountPercent}% OFF
+              </div>
+            )}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[8px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider shadow-md">
               Most Popular / Ultimate
             </div>
@@ -366,11 +627,31 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
               </div>
 
               <div className="pt-2">
-                <div className="text-3xl font-black text-sky-400">
-                  ₹{billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price}
-                  <span className="text-xs font-normal opacity-60"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
+                <div className="text-3xl font-black text-sky-400 flex items-baseline flex-wrap gap-1.5">
+                  {appliedCoupon ? (
+                    <>
+                      <span className="text-zinc-500 line-through text-lg font-bold">
+                        ₹{billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price}
+                      </span>
+                      <span>
+                        ₹{getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)}
+                      </span>
+                    </>
+                  ) : (
+                    <span>
+                      ₹{billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price}
+                    </span>
+                  )}
+                  <span className="text-xs font-normal text-zinc-500"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
                 </div>
-                {billingInterval === 'yearly' && (
+
+                {appliedCoupon && (
+                  <span className="inline-block text-[9px] font-black uppercase text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded mt-1.5">
+                    Saved ₹{(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price) - getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)} with {appliedCoupon.code}!
+                  </span>
+                )}
+
+                {billingInterval === 'yearly' && !appliedCoupon && (
                   <span className="inline-block text-[9px] font-black uppercase bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/25 mt-1 animate-pulse">
                     {plans.pro.yearly.savings}
                   </span>
@@ -407,7 +688,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             <button
               onClick={() => handleCheckout(
                 billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id,
-                billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price
+                getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)
               )}
               disabled={isProcessing !== null}
               className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${

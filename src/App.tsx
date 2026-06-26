@@ -34,7 +34,34 @@ export default function App() {
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [sidebarIsOpen, setSidebarIsOpen] = useState(true);
-  const [settingsIsOpen, setSettingsIsOpen] = useState(false);
+
+  // Custom High-Fidelity SPA Path Router
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (path: string) => {
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+      setCurrentPath(path);
+    }
+  };
+
+  const settingsIsOpen = currentPath === '/settings';
+
+  const handleCloseModal = () => {
+    if (activeChatId) {
+      navigate(`/chat/${activeChatId}`);
+    } else {
+      navigate('/');
+    }
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
     theme: 'dark',
@@ -346,16 +373,14 @@ export default function App() {
     }
   }, []);
 
-  // Load chats and settings on mount
+  // Load chats and settings on mount with dynamic initial routing fallback
   useEffect(() => {
     try {
       const savedChats = localStorage.getItem(LOCAL_STORAGE_CHATS_KEY);
+      let loadedChats: ChatSession[] = [];
       if (savedChats) {
-        const parsed = JSON.parse(savedChats);
-        setChats(parsed);
-        if (parsed.length > 0) {
-          setActiveChatId(parsed[0].id);
-        }
+        loadedChats = JSON.parse(savedChats);
+        setChats(loadedChats);
       } else {
         // Create an initial beautiful welcome chat session
         const welcomeId = `welcome-${Date.now()}`;
@@ -374,8 +399,30 @@ export default function App() {
             }
           ]
         };
-        setChats([initialSession]);
-        setActiveChatId(welcomeId);
+        loadedChats = [initialSession];
+        setChats(loadedChats);
+      }
+
+      // Check current URL for deep link to a specific chat session
+      const currentPathName = window.location.pathname;
+      let activeIdToSet: string | null = null;
+      if (currentPathName.startsWith('/chat/')) {
+        const pathId = currentPathName.substring(6);
+        if (loadedChats.some(c => c.id === pathId)) {
+          activeIdToSet = pathId;
+        }
+      }
+
+      if (!activeIdToSet && loadedChats.length > 0) {
+        activeIdToSet = loadedChats[0].id;
+      }
+
+      if (activeIdToSet) {
+        setActiveChatId(activeIdToSet);
+        if (currentPathName === '/' || currentPathName === '/chat') {
+          window.history.replaceState(null, '', `/chat/${activeIdToSet}`);
+          setCurrentPath(`/chat/${activeIdToSet}`);
+        }
       }
 
       const savedSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
@@ -386,6 +433,18 @@ export default function App() {
       console.error("Error loading localStorage data:", e);
     }
   }, []);
+
+  // Sync back/forward navigation state to load appropriate active chat session
+  useEffect(() => {
+    if (currentPath.startsWith('/chat/')) {
+      const id = currentPath.substring(6);
+      if (id && chats.some(c => c.id === id)) {
+        if (activeChatId !== id) {
+          setActiveChatId(id);
+        }
+      }
+    }
+  }, [currentPath, chats]);
 
   // Sync settings theme to HTML class
   useEffect(() => {
@@ -428,6 +487,7 @@ export default function App() {
     const updated = [newSession, ...chats];
     saveChats(updated);
     setActiveChatId(newId);
+    navigate(`/chat/${newId}`);
     
     // Auto-open sidebar on mobile when creating a new chat to make sure they see it
     if (window.innerWidth < 768) {
@@ -437,6 +497,7 @@ export default function App() {
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
+    navigate(`/chat/${id}`);
     if (window.innerWidth < 768) {
       setSidebarIsOpen(false); // Close sidebar on mobile select
     }
@@ -448,8 +509,10 @@ export default function App() {
     if (activeChatId === id) {
       if (updated.length > 0) {
         setActiveChatId(updated[0].id);
+        navigate(`/chat/${updated[0].id}`);
       } else {
         setActiveChatId(null);
+        navigate('/');
       }
     }
   };
@@ -462,6 +525,7 @@ export default function App() {
   const handleClearAllChats = () => {
     saveChats([]);
     setActiveChatId(null);
+    navigate('/');
   };
 
   const handleChangeModel = (modelId: string) => {
@@ -524,7 +588,7 @@ export default function App() {
       };
       const finalSession = { ...currentSession, messages: [...currentSession.messages, errorMsg] };
       saveChats(chats.map(c => c.id === sessionId ? finalSession : c));
-      setPricingIsOpen(true);
+      navigate('/pricing');
       return;
     }
 
@@ -746,7 +810,7 @@ export default function App() {
       };
       const finalSession = { ...currentSession, messages: [...messagesCopy, errorMsg] };
       saveChats(chats.map(c => c.id === activeChatId ? finalSession : c));
-      setPricingIsOpen(true);
+      navigate('/pricing');
       return;
     }
 
@@ -806,13 +870,17 @@ export default function App() {
     }
   };
 
-  const [pricingIsOpen, setPricingIsOpen] = useState(false);
-  const [legalIsOpen, setLegalIsOpen] = useState(false);
-  const [legalActiveTab, setLegalActiveTab] = useState<LegalTab>('faq');
+  const pricingIsOpen = currentPath === '/pricing';
+  const legalIsOpen = currentPath.startsWith('/legal');
+  
+  let legalActiveTab: LegalTab = 'faq';
+  if (currentPath === '/legal/privacy') legalActiveTab = 'privacy';
+  else if (currentPath === '/legal/terms') legalActiveTab = 'terms';
+  else if (currentPath === '/legal/refund') legalActiveTab = 'refund';
+  else if (currentPath === '/legal/contact') legalActiveTab = 'contact';
 
   const handleOpenLegal = (tab: LegalTab = 'faq') => {
-    setLegalActiveTab(tab);
-    setLegalIsOpen(true);
+    navigate(`/legal/${tab}`);
   };
 
   const activeSession = getActiveSession();
@@ -848,7 +916,7 @@ export default function App() {
         <LandingPage settings={settings} onLogin={handleLogin} onOpenLegal={handleOpenLegal} />
         <LegalCenter
           isOpen={legalIsOpen}
-          onClose={() => setLegalIsOpen(false)}
+          onClose={handleCloseModal}
           initialTab={legalActiveTab}
           theme={settings.theme}
         />
@@ -866,13 +934,13 @@ export default function App() {
         onNewChat={handleNewChat}
         onDeleteChat={handleDeleteChat}
         onRenameChat={handleRenameChat}
-        onOpenSettings={() => setSettingsIsOpen(true)}
+        onOpenSettings={() => navigate('/settings')}
         isOpen={sidebarIsOpen}
         onToggleSidebar={() => setSidebarIsOpen(!sidebarIsOpen)}
         settings={settings}
         onLogout={handleLogout}
         isPremium={isPremium}
-        onOpenPricing={() => setPricingIsOpen(true)}
+        onOpenPricing={() => navigate('/pricing')}
         onOpenLegal={handleOpenLegal}
         userPlan={userPlan}
         creditsRemaining={creditsRemaining}
@@ -933,7 +1001,7 @@ export default function App() {
           onChangeModel={handleChangeModel}
           onChangeSearchGrounding={handleChangeSearchGrounding}
           isPremium={isPremium}
-          onOpenPricing={() => setPricingIsOpen(true)}
+          onOpenPricing={() => navigate('/pricing')}
           onChangeCompareModels={handleChangeCompareModels}
           onOpenLegal={handleOpenLegal}
           userPlan={userPlan}
@@ -943,7 +1011,7 @@ export default function App() {
       {/* Global Settings Modal */}
       <SettingsDialog
         isOpen={settingsIsOpen}
-        onClose={() => setSettingsIsOpen(false)}
+        onClose={handleCloseModal}
         settings={settings}
         onChangeSettings={saveSettings}
         onClearAllChats={handleClearAllChats}
@@ -953,7 +1021,7 @@ export default function App() {
       {/* Cashfree PG Pricing modal */}
       <PricingModal
         isOpen={pricingIsOpen}
-        onClose={() => setPricingIsOpen(false)}
+        onClose={handleCloseModal}
         userEmail={settings.userEmail}
         theme={settings.theme}
         onOpenLegal={handleOpenLegal}
@@ -962,7 +1030,7 @@ export default function App() {
       {/* Help & Legal Center Modal */}
       <LegalCenter
         isOpen={legalIsOpen}
-        onClose={() => setLegalIsOpen(false)}
+        onClose={handleCloseModal}
         initialTab={legalActiveTab}
         theme={settings.theme}
       />

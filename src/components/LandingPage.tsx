@@ -473,8 +473,11 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   <span className="text-xs text-zinc-400">Unified Cost:</span>
                   <div className="text-right">
                     <span className="text-[11px] text-zinc-500 line-through block leading-none mr-1">₹11,400/mo</span>
-                    <span className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 leading-none">
+                    <span className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 leading-none block">
                       Just ₹49/mo
+                    </span>
+                    <span className="text-[9px] font-bold text-emerald-400 block mt-1 animate-pulse">
+                      Use code: WEBNIXO50 for 50% extra off!
                     </span>
                   </div>
                 </div>
