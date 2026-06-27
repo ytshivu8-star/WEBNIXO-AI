@@ -7,7 +7,6 @@ interface PricingModalProps {
   userEmail: string;
   theme: 'light' | 'dark';
   onOpenLegal?: (tab: 'faq' | 'terms' | 'privacy' | 'cookies' | 'refund' | 'contact') => void;
-  userPlan?: 'free' | 'starter' | 'pro';
 }
 
 const loadCashfreeSDK = (): Promise<any> => {
@@ -29,7 +28,7 @@ const loadCashfreeSDK = (): Promise<any> => {
   });
 };
 
-export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpenLegal, userPlan = 'free' }: PricingModalProps) {
+export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpenLegal }: PricingModalProps) {
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isProcessing, setIsProcessing] = useState<string | null>(null); // holds planId during processing
   const [error, setError] = useState('');
@@ -230,41 +229,26 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
   };
 
   const plans = {
-    free: {
-      name: 'Free Plan',
-      description: 'Ideal for getting started with essential AI models.',
-      credits: '20 Credits/Day',
-      price: 0,
-      models: ['Gemini Flash', 'DeepSeek'],
-      features: [
-        '20 Credits / Day',
-        'Gemini Flash (1 credit)',
-        'DeepSeek (1 credit)',
-        'Standard server priority',
-      ],
-      color: 'zinc',
-    },
     starter: {
       name: 'Starter Plan',
       description: 'Perfect for regular users and essential multi-model tasks.',
       credits: '1,000 Credits/Month',
       monthly: {
         id: 'starter_monthly',
-        price: 399,
-        label: '₹399 / month',
+        price: 199,
+        label: '₹199 / month',
       },
       yearly: {
         id: 'starter_yearly',
-        price: 3999,
-        label: '₹3,999 / year',
-        savings: 'Save ₹789',
+        price: 1999,
+        label: '₹1,999 / year',
+        savings: 'Save ₹389',
       },
-      models: ['Gemini Flash', 'DeepSeek', 'GPT', 'Mistral'],
+      models: ['Gemini Flash', 'DeepSeek', 'Mistral'],
       features: [
         '1,000 Credits / Month',
         'Gemini Flash (1 credit)',
         'DeepSeek (1 credit)',
-        'GPT (5 credits)',
         'Mistral (2 credits)',
         'Standard server priority',
       ],
@@ -276,30 +260,30 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       credits: '3,000 Credits/Month',
       monthly: {
         id: 'pro_monthly',
-        price: 799,
-        label: '₹799 / month',
+        price: 499,
+        label: '₹499 / month',
       },
       yearly: {
         id: 'pro_yearly',
-        price: 7999,
-        label: '₹7,999 / year',
-        savings: 'Save ₹1,589',
+        price: 4999,
+        label: '₹4,999 / year',
+        savings: 'Save ₹989',
       },
       models: [
         'Gemini Flash',
         'DeepSeek',
+        'Mistral',
         'GPT',
         'Claude',
         'Grok',
         'Perplexity',
-        'Mistral',
       ],
       features: [
         '3,000 Credits / Month',
         'Gemini Flash & DeepSeek (1 cr)',
+        'Mistral (2 cr) • Grok & Perplexity (4 cr)',
         'GPT & Claude (5 cr)',
-        'Grok & Perplexity (4 cr)',
-        'Mistral (2 cr)',
+        'Dual-model comparative workspace',
         'Elite high-priority routing',
       ],
       color: 'sky',
@@ -435,7 +419,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       />
 
       {/* Modal Container */}
-      <div className={`relative w-full max-w-5xl p-6 md:p-8 rounded-3xl border shadow-2xl transition-all scale-100 z-50 my-8 overflow-hidden ${
+      <div className={`relative w-full max-w-3xl p-6 md:p-8 rounded-3xl border shadow-2xl transition-all scale-100 z-50 my-8 overflow-hidden ${
         isDark 
           ? 'bg-[#1a1a1a] border-zinc-800 text-zinc-100' 
           : 'bg-white border-zinc-200 text-zinc-900'
@@ -539,7 +523,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
               
               <input
                 type="text"
-                placeholder={appliedCoupon ? `Active: ${appliedCoupon.code}` : "Promo code (e.g. WEBNIXO50)"}
+                placeholder={appliedCoupon ? `Active: ${appliedCoupon.code}` : "Enter affiliate coupon or referral code"}
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
                 disabled={!!appliedCoupon || isApplyingCoupon}
@@ -592,7 +576,23 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           </div>
         )}
 
-        {/* Real-time database coupons are accepted from affiliates */}
+        {/* Dynamic Database Coupon Suggestions */}
+        {!appliedCoupon && dbCoupons.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4 text-[10px]">
+            <span className="text-zinc-500 font-medium">👉 Active Coupons:</span>
+            {dbCoupons.slice(0, 3).map((c: any) => (
+              <button
+                key={c.code}
+                onClick={() => { setCouponInput(c.code); setTimeout(handleApplyCoupon, 100); }}
+                className={`px-2 py-0.5 rounded-full font-bold border transition-all cursor-pointer ${
+                  isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:border-emerald-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-emerald-600 hover:border-emerald-300'
+                }`}
+              >
+                {c.code} ({c.discount_percent || c.discountPercent || 20}% Off)
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Toggle Database Control Center Button */}
         <div className="flex justify-center mb-6">
@@ -765,75 +765,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           </div>
         )}
 
-        {/* Three Plan Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {/* FREE CARD */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
-            isDark 
-              ? 'bg-neutral-900/20 border-white/5 hover:border-zinc-500/20' 
-              : 'bg-zinc-50 border-zinc-200 hover:shadow-lg'
-          }`}>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <h4 className="text-base font-black tracking-tight">{plans.free.name}</h4>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                  {plans.free.description}
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <div className="text-3xl font-black text-zinc-400 flex items-baseline flex-wrap gap-1.5">
-                  <span>₹0</span>
-                  <span className="text-xs font-normal text-zinc-500"> / forever</span>
-                </div>
-              </div>
-
-              <hr className={isDark ? 'border-white/5' : 'border-zinc-200'} />
-
-              <div className="space-y-2.5">
-                <p className="text-xs font-bold text-zinc-400">Included Engines:</p>
-                <div className="flex flex-wrap gap-1">
-                  {plans.free.models.map(m => (
-                    <span key={m} className={`text-[9px] font-black px-1.5 py-0.5 rounded-md ${
-                      isDark ? 'bg-white/5 border border-white/15' : 'bg-zinc-200 text-zinc-800'
-                    }`}>
-                      {m}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <hr className={isDark ? 'border-white/5' : 'border-zinc-200'} />
-
-              <ul className="space-y-2 text-[11px]">
-                {plans.free.features.map((feat, idx) => (
-                  <li key={idx} className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <button
-              disabled
-              className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 ${
-                userPlan === 'free'
-                  ? (isDark ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' : 'bg-zinc-200 text-zinc-600')
-                  : (isDark ? 'bg-zinc-900/50 text-zinc-600 border border-zinc-800' : 'bg-zinc-100 text-zinc-400')
-              }`}
-            >
-              {userPlan === 'free' ? (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Current Active Pass</span>
-                </>
-              ) : (
-                <span>Basic Tier</span>
-              )}
-            </button>
-          </div>
-
+        {/* Two Plan Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* STARTER CARD */}
           <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
             isDark 
@@ -913,42 +846,30 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
               </ul>
             </div>
 
-            {userPlan === 'starter' ? (
-              <button
-                disabled
-                className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 ${
-                  isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Current Active Pass</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleCheckout(
-                  billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id,
-                  getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)
-                )}
-                disabled={isProcessing !== null}
-                className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
-                  isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id)
-                    ? 'bg-zinc-600 text-white'
-                    : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/10'
-                }`}
-              >
-                {isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id) ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Get Starter Pass</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={() => handleCheckout(
+                billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id,
+                getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)
+              )}
+              disabled={isProcessing !== null}
+              className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
+                isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id)
+                  ? 'bg-zinc-600 text-white'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/10'
+              }`}
+            >
+              {isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id) ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Get Starter Pass</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* PRO CARD */}
@@ -992,13 +913,13 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
                   )}
                   <span className="text-xs font-normal text-zinc-500"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
                 </div>
-                
+
                 {appliedCoupon && (
-                  <span className="inline-block text-[9px] font-black uppercase text-sky-400 bg-sky-505/10 border border-sky-500/20 px-1.5 py-0.5 rounded mt-1.5">
+                  <span className="inline-block text-[9px] font-black uppercase text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded mt-1.5">
                     Saved ₹{(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price) - getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)} with {appliedCoupon.code}!
                   </span>
                 )}
-                
+
                 {billingInterval === 'yearly' && !appliedCoupon && (
                   <span className="inline-block text-[9px] font-black uppercase bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/25 mt-1 animate-pulse">
                     {plans.pro.yearly.savings}
@@ -1033,42 +954,30 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
               </ul>
             </div>
 
-            {userPlan === 'pro' ? (
-              <button
-                disabled
-                className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 ${
-                  isDark ? 'bg-sky-500/10 text-sky-400 border border-sky-500/25' : 'bg-sky-100 text-sky-800 border border-sky-200'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Current Active Pass</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleCheckout(
-                  billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id,
-                  getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)
-                )}
-                disabled={isProcessing !== null}
-                className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
-                  isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id)
-                    ? 'bg-zinc-600 text-white'
-                    : 'bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/10'
-                }`}
-              >
-                {isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id) ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Get Pro Elite Pass</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={() => handleCheckout(
+                billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id,
+                getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)
+              )}
+              disabled={isProcessing !== null}
+              className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
+                isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id)
+                  ? 'bg-zinc-600 text-white'
+                  : 'bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/10'
+              }`}
+            >
+              {isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id) ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Get Pro Elite Pass</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 

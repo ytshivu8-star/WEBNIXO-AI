@@ -782,7 +782,7 @@ async function logProfileToSupabase(profile: {
     email: emailStr,
     name: profile.name,
     theme: profile.theme || 'dark',
-    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 20,
+    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 30,
     updated_at: new Date().toISOString()
   };
 
@@ -922,10 +922,11 @@ async function rewardAffiliateIfApplicable(emailStr: string, amountPaid: number)
 
     // Calculate commission based on standard settings
     let commission = amountPaid * 0.20; // Default 20%
-    if (Math.abs(amountPaid - 399) < 10) commission = 79.80;
-    else if (Math.abs(amountPaid - 799) < 10) commission = 159.80;
-    else if (Math.abs(amountPaid - 3999) < 50) commission = 799.80;
-    else if (Math.abs(amountPaid - 7999) < 50) commission = 1599.80;
+    if (Math.abs(amountPaid - 199) < 10) commission = 39.80;
+    else if (Math.abs(amountPaid - 499) < 10) commission = 99.80;
+    else if (Math.abs(amountPaid - 999) < 10) commission = 199.80;
+    else if (Math.abs(amountPaid - 1999) < 50) commission = 399.80;
+    else if (Math.abs(amountPaid - 4999) < 50) commission = 999.80;
 
     // Log the "Sale" event in webnixo_events_affilate
     const eventId = `aff_sale_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -1322,49 +1323,14 @@ app.get("/api/payment/verify", async (req, res) => {
       const emailStr = email.toLowerCase();
 
       let plan_id = "pro_monthly";
-      const savedPayment = inMemoryPayments.get(order_id as string);
-      if (savedPayment && savedPayment.plan_id) {
-        plan_id = savedPayment.plan_id;
-      } else {
-        const supabaseAdmin = getSupabaseAdmin();
-        let fetchedPlan = null;
-        if (supabaseAdmin) {
-          try {
-            const { data, error } = await supabaseAdmin
-              .from("payments")
-              .select("plan_id")
-              .eq("order_id", order_id as string)
-              .maybeSingle();
-            if (!error && data && data.plan_id) {
-              fetchedPlan = data.plan_id;
-            }
-          } catch (dbErr) {
-            console.warn("Failed to lookup order_id from database:", dbErr);
-          }
-        }
-        
-        if (fetchedPlan) {
-          plan_id = fetchedPlan;
-        } else {
-          // Fallback based on new and old prices
-          if (amount === 7999) {
-            plan_id = "pro_yearly";
-          } else if (amount === 799) {
-            plan_id = "pro_monthly";
-          } else if (amount === 3999) {
-            plan_id = "starter_yearly";
-          } else if (amount === 399) {
-            plan_id = "starter_monthly";
-          } else if (amount === 4999) {
-            plan_id = "pro_yearly";
-          } else if (amount === 499) {
-            plan_id = "pro_monthly";
-          } else if (amount === 1999) {
-            plan_id = "starter_yearly";
-          } else if (amount === 199) {
-            plan_id = "starter_monthly";
-          }
-        }
+      if (amount === 4999) {
+        plan_id = "pro_yearly";
+      } else if (amount === 499) {
+        plan_id = "pro_monthly";
+      } else if (amount === 1999) {
+        plan_id = "starter_yearly";
+      } else if (amount === 199) {
+        plan_id = "starter_monthly";
       }
 
       const subscriptionDetails = {
@@ -1440,7 +1406,8 @@ const inMemoryCoupons = new Map<string, {
   description: string;
   is_active: boolean;
   created_at: string;
-}>([]);
+  email?: string;
+}>();
 
 const inMemoryCouponUsages: any[] = [];
 
@@ -1448,6 +1415,7 @@ const inMemoryCouponUsages: any[] = [];
 app.get("/api/coupons", async (req, res) => {
   try {
     const supabaseAdmin = getSupabaseAdmin();
+
     if (supabaseAdmin) {
       const { data, error } = await supabaseAdmin
         .from("webnixo_profiles_affilate")
@@ -1457,22 +1425,31 @@ app.get("/api/coupons", async (req, res) => {
         const couponsList: any[] = [];
         data.forEach((item: any) => {
           if (item.custom_coupon_code && item.custom_coupon_code.trim()) {
-            couponsList.push({
-              code: item.custom_coupon_code.trim().toUpperCase(),
-              discount_percent: 20, // Default 20% discount for affiliate coupon
-              description: `Affiliate promo of ${item.full_name}`,
-              is_active: true,
-              created_at: item.joined_at || new Date().toISOString()
-            });
+            const codeUpper = item.custom_coupon_code.trim().toUpperCase();
+            // Avoid duplicate overriding of standard codes if any
+            if (!couponsList.some(c => c.code === codeUpper)) {
+              couponsList.push({
+                code: codeUpper,
+                discount_percent: 20, // Default 20% discount for affiliate coupon
+                description: `Affiliate promo of ${item.full_name}`,
+                is_active: true,
+                created_at: item.joined_at || new Date().toISOString(),
+                email: item.email
+              });
+            }
           }
           if (item.referral_code && item.referral_code.trim()) {
-            couponsList.push({
-              code: item.referral_code.trim().toUpperCase(),
-              discount_percent: 20, // Default 20% discount for affiliate referral link
-              description: `Referral of ${item.full_name}`,
-              is_active: true,
-              created_at: item.joined_at || new Date().toISOString()
-            });
+            const codeUpper = item.referral_code.trim().toUpperCase();
+            if (!couponsList.some(c => c.code === codeUpper)) {
+              couponsList.push({
+                code: codeUpper,
+                discount_percent: 20, // Default 20% discount for affiliate referral link
+                description: `Referral of ${item.full_name}`,
+                is_active: true,
+                created_at: item.joined_at || new Date().toISOString(),
+                email: item.email
+              });
+            }
           }
         });
 
@@ -1485,6 +1462,7 @@ app.get("/api/coupons", async (req, res) => {
         return res.json({ source: "supabase", coupons: couponsList });
       }
     }
+
     return res.json({ source: "local_cache", coupons: Array.from(inMemoryCoupons.values()) });
   } catch (e) {
     return res.json({ source: "local_cache_fallback", coupons: Array.from(inMemoryCoupons.values()) });
@@ -1597,9 +1575,11 @@ app.post("/api/coupons/apply", async (req, res) => {
 
     // Fallback to local inMemoryCoupons if synced
     if (!coupon) {
-      coupon = inMemoryCoupons.get(cleanCode) || null;
-      if (coupon) {
+      const cached = inMemoryCoupons.get(cleanCode);
+      if (cached) {
+        coupon = cached;
         isAffiliateCoupon = true;
+        affiliateEmail = cached.email || "";
       }
     }
 

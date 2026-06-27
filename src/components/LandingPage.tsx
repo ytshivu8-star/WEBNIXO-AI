@@ -477,7 +477,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                       Just ₹49/mo
                     </span>
                     <span className="text-[9px] font-bold text-emerald-400 block mt-1 animate-pulse">
-                      Use code: WEBNIXO50 for 50% extra off!
+                      Use affiliate coupon/referral code for extra discounts!
                     </span>
                   </div>
                 </div>
