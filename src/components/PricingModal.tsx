@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift, Database, Plus, RefreshCw, Calendar, Sparkle } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -59,12 +60,57 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
     setIsFetchingCoupons(true);
     try {
       const res = await fetch('/api/coupons');
-      const data = await res.json();
-      if (data && data.coupons) {
-        setDbCoupons(data.coupons);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.coupons) {
+          setDbCoupons(data.coupons);
+          return;
+        }
       }
+      throw new Error("API not responding or returned error");
     } catch (e) {
-      console.error("Failed to load coupons from database", e);
+      console.warn("Failed to load coupons from API. Trying client-side Supabase direct connection...", e);
+      try {
+        const { data, error } = await supabase
+          .from("webnixo_profiles_affilate")
+          .select("email, full_name, referral_code, custom_coupon_code, joined_at");
+        if (!error && data) {
+          const couponsList: any[] = [];
+          data.forEach((item: any) => {
+            if (item.custom_coupon_code && item.custom_coupon_code.trim()) {
+              const codeUpper = item.custom_coupon_code.trim().toUpperCase();
+              if (!couponsList.some(c => c.code === codeUpper)) {
+                couponsList.push({
+                  code: codeUpper,
+                  discount_percent: 20,
+                  description: `Affiliate promo of ${item.full_name}`,
+                  is_active: true,
+                  created_at: item.joined_at || new Date().toISOString(),
+                  email: item.email
+                });
+              }
+            }
+            if (item.referral_code && item.referral_code.trim()) {
+              const codeUpper = item.referral_code.trim().toUpperCase();
+              if (!couponsList.some(c => c.code === codeUpper)) {
+                couponsList.push({
+                  code: codeUpper,
+                  discount_percent: 20,
+                  description: `Referral of ${item.full_name}`,
+                  is_active: true,
+                  created_at: item.joined_at || new Date().toISOString(),
+                  email: item.email
+                });
+              }
+            }
+          });
+          setDbCoupons(couponsList);
+        } else {
+          console.error("Supabase client-side direct connection also failed:", error);
+        }
+      } catch (clientErr) {
+        console.error("Client-side direct query exception:", clientErr);
+      }
     } finally {
       setIsFetchingCoupons(false);
     }
@@ -75,12 +121,16 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
     setIsFetchingLogs(true);
     try {
       const res = await fetch('/api/coupons/usages');
-      const data = await res.json();
-      if (data && data.usages) {
-        setCouponUsages(data.usages);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.usages) {
+          setCouponUsages(data.usages);
+          return;
+        }
       }
+      throw new Error("API not responding or returned error");
     } catch (e) {
-      console.error("Failed to load coupon logs from database", e);
+      console.warn("Failed to load coupon logs from API. Trying client-side fallback...", e);
     } finally {
       setIsFetchingLogs(false);
     }
@@ -210,11 +260,86 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         setCouponSuccess(`🎉 Coupon ${codeClean} applied offline! Saved ${discountPercent}%`);
         setCouponError('');
         setShowConfetti(true);
+        
+        // Log client-side affiliate lead event directly so affiliate partners get their credit
+        try {
+          const matchedEmail = matchedLocal.email || "";
+          if (matchedEmail) {
+            const eventId = `aff_evt_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+            await supabase.from("webnixo_events_affilate").insert({
+              id: eventId,
+              user_email: matchedEmail,
+              type: "Coupon Applied",
+              details: `Client-side user ${userEmail || 'guest'} applied coupon ${codeClean} (Offline Match)`,
+              timestamp: new Date().toISOString(),
+              commission: 0,
+              created_at: new Date().toISOString()
+            });
+            console.log("Logged affiliate event client-side successfully.");
+          }
+        } catch (logErr) {
+          console.warn("Failed to log affiliate event client-side:", logErr);
+        }
+
         setTimeout(() => {
           setShowConfetti(false);
         }, 4500);
       } else {
-        setCouponError('❌ Invalid coupon code or database connection error.');
+        // Direct query client-side against Supabase
+        try {
+          const { data: affiliate, error } = await supabase
+            .from("webnixo_profiles_affilate")
+            .select("*")
+            .or(`custom_coupon_code.ilike.${codeClean},referral_code.ilike.${codeClean}`)
+            .maybeSingle();
+
+          let foundAffiliate = affiliate;
+          if (error || !affiliate) {
+            // Scan fallback
+            const { data: allAffs } = await supabase
+              .from("webnixo_profiles_affilate")
+              .select("*");
+            if (allAffs) {
+              foundAffiliate = allAffs.find((aff: any) => 
+                (aff.custom_coupon_code && String(aff.custom_coupon_code).trim().toUpperCase() === codeClean) ||
+                (aff.referral_code && String(aff.referral_code).trim().toUpperCase() === codeClean)
+              ) || null;
+            }
+          }
+
+          if (foundAffiliate) {
+            const discountPercent = 20; // Default 20%
+            setAppliedCoupon({ code: codeClean, discountPercent });
+            setCouponSuccess(`🎉 Affiliate coupon ${codeClean} applied directly via Database! Saved ${discountPercent}%`);
+            setCouponError('');
+            setShowConfetti(true);
+
+            // Log event directly to webnixo_events_affilate for commission tracking
+            try {
+              const eventId = `aff_evt_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+              await supabase.from("webnixo_events_affilate").insert({
+                id: eventId,
+                user_email: foundAffiliate.email,
+                type: "Coupon Applied",
+                details: `Client-side user ${userEmail || 'guest'} applied coupon ${codeClean} (Direct DB)`,
+                timestamp: new Date().toISOString(),
+                commission: 0,
+                created_at: new Date().toISOString()
+              });
+            } catch (evtErr) {
+              console.warn("Direct client log error:", evtErr);
+            }
+
+            setTimeout(() => {
+              setShowConfetti(false);
+            }, 4500);
+          } else {
+            setCouponError('❌ Invalid coupon code or connection error.');
+          }
+        } catch (clientErr) {
+          console.error("Direct client query apply exception:", clientErr);
+          setCouponError('❌ Invalid coupon code or database connection error.');
+        }
       }
     } finally {
       setIsApplyingCoupon(false);
