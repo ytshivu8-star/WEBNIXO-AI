@@ -35,21 +35,39 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [sidebarIsOpen, setSidebarIsOpen] = useState(true);
 
-  // Custom High-Fidelity SPA Path Router
-  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+  // Custom High-Fidelity SPA Path Router (Supports both clean URLs and Hash fallback)
+  const getRoutePath = () => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#')) {
+      return hash.substring(1) || '/';
+    }
+    return window.location.pathname;
+  };
+
+  const [currentPath, setCurrentPath] = useState(getRoutePath);
 
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+    const handleNavigationEvent = () => {
+      setCurrentPath(getRoutePath());
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleNavigationEvent);
+    window.addEventListener('hashchange', handleNavigationEvent);
+    return () => {
+      window.removeEventListener('popstate', handleNavigationEvent);
+      window.removeEventListener('hashchange', handleNavigationEvent);
+    };
   }, []);
 
   const navigate = (path: string) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState(null, '', path);
+    const isUsingHash = window.location.hash && window.location.hash.startsWith('#');
+    if (isUsingHash) {
+      window.location.hash = path;
       setCurrentPath(path);
+    } else {
+      if (window.location.pathname !== path) {
+        window.history.pushState(null, '', path);
+        setCurrentPath(path);
+      }
     }
   };
 
@@ -329,7 +347,7 @@ export default function App() {
 
   // Popup Auth Callback listener (runs when this page is loaded inside popup frame)
   useEffect(() => {
-    if (window.location.pathname.startsWith('/auth/callback')) {
+    if (getRoutePath().startsWith('/auth/callback')) {
       const handlePopupCallback = async () => {
         try {
           const isPopup = window.opener || window.name === 'google_oauth_popup';
@@ -415,8 +433,8 @@ export default function App() {
         setChats(loadedChats);
       }
 
-      // Check current URL for deep link to a specific chat session
-      const currentPathName = window.location.pathname;
+      // Check current URL for deep link to a specific chat session (supports both pathname and hash)
+      const currentPathName = getRoutePath();
       let activeIdToSet: string | null = null;
       if (currentPathName.startsWith('/chat/')) {
         const pathId = currentPathName.substring(6);
@@ -432,7 +450,12 @@ export default function App() {
       if (activeIdToSet) {
         setActiveChatId(activeIdToSet);
         if (currentPathName === '/' || currentPathName === '/chat') {
-          window.history.replaceState(null, '', `/chat/${activeIdToSet}`);
+          const isUsingHash = window.location.hash && window.location.hash.startsWith('#');
+          if (isUsingHash) {
+            window.location.hash = `/chat/${activeIdToSet}`;
+          } else {
+            window.history.replaceState(null, '', `/chat/${activeIdToSet}`);
+          }
           setCurrentPath(`/chat/${activeIdToSet}`);
         }
       }
@@ -898,8 +921,9 @@ export default function App() {
   const activeSession = getActiveSession();
 
   // Intercept special routes
-  const isAuthCallbackPath = window.location.pathname.startsWith('/auth/callback');
-  const isPaymentVerifyPath = window.location.pathname.startsWith('/payment-verify');
+  const currentRoutedPath = getRoutePath();
+  const isAuthCallbackPath = currentRoutedPath.startsWith('/auth/callback');
+  const isPaymentVerifyPath = currentRoutedPath.startsWith('/payment-verify');
 
   if (isAuthCallbackPath) {
     return (
