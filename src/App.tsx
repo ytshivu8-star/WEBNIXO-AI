@@ -95,9 +95,9 @@ export default function App() {
 
   const [creditsLimit, setCreditsLimit] = useState<number>(() => {
     try {
-      return Number(localStorage.getItem('webnixo_credits_limit')) || 30;
+      return Number(localStorage.getItem('webnixo_credits_limit')) || 20;
     } catch {
-      return 30;
+      return 20;
     }
   });
 
@@ -106,9 +106,9 @@ export default function App() {
       const stored = localStorage.getItem(`webnixo_credits_remaining_${settings.userEmail || 'default'}`);
       if (stored !== null) return Number(stored);
       const plan = localStorage.getItem('webnixo_user_plan') || 'free';
-      return plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+      return plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 20;
     } catch {
-      return 30;
+      return 20;
     }
   });
 
@@ -127,12 +127,12 @@ export default function App() {
     localStorage.setItem('webnixo_user_plan', plan);
     setIsPremium(plan !== 'free');
     localStorage.setItem('webnixo_premium_user', plan !== 'free' ? 'true' : 'false');
-    const limit = plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+    const limit = plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 20;
     updateCredits(limit, limit);
   };
 
   const handleResetCredits = () => {
-    const limit = userPlan === 'pro' ? 3000 : userPlan === 'starter' ? 1000 : 30;
+    const limit = userPlan === 'pro' ? 3000 : userPlan === 'starter' ? 1000 : 20;
     updateCredits(limit, limit);
   };
 
@@ -173,12 +173,12 @@ export default function App() {
           localStorage.removeItem('webnixo_premium_user');
           setUserPlan('free');
           localStorage.setItem('webnixo_user_plan', 'free');
-          setCreditsLimit(30);
-          localStorage.setItem('webnixo_credits_limit', '30');
+          setCreditsLimit(20);
+          localStorage.setItem('webnixo_credits_limit', '20');
           const key = `webnixo_credits_remaining_${emailStr}`;
           if (localStorage.getItem(key) === null) {
-            setCreditsRemaining(30);
-            localStorage.setItem(key, '30');
+            setCreditsRemaining(20);
+            localStorage.setItem(key, '20');
           }
         }
       }
@@ -1037,6 +1037,7 @@ export default function App() {
         userEmail={settings.userEmail}
         theme={settings.theme}
         onOpenLegal={handleOpenLegal}
+        userPlan={userPlan}
       />
 
       {/* Help & Legal Center Modal */}

@@ -782,7 +782,7 @@ async function logProfileToSupabase(profile: {
     email: emailStr,
     name: profile.name,
     theme: profile.theme || 'dark',
-    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 30,
+    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 20,
     updated_at: new Date().toISOString()
   };
 
@@ -895,23 +895,37 @@ async function rewardAffiliateIfApplicable(emailStr: string, amountPaid: number)
     const { data: affiliate, error } = await supabaseAdmin
       .from("webnixo_profiles_affilate")
       .select("*")
-      .or(`custom_coupon_code.eq.${codeClean},referral_code.eq.${codeClean}`)
+      .or(`custom_coupon_code.ilike.${codeClean},referral_code.ilike.${codeClean}`)
       .maybeSingle();
 
-    if (error || !affiliate) {
+    let foundAffiliate = null;
+    if (!error && affiliate) {
+      foundAffiliate = affiliate;
+    } else {
+      const { data: allAffiliates, error: fetchErr } = await supabaseAdmin
+        .from("webnixo_profiles_affilate")
+        .select("*");
+      if (!fetchErr && allAffiliates) {
+        foundAffiliate = allAffiliates.find((aff: any) => 
+          (aff.custom_coupon_code && String(aff.custom_coupon_code).trim().toUpperCase() === codeClean) ||
+          (aff.referral_code && String(aff.referral_code).trim().toUpperCase() === codeClean)
+        );
+      }
+    }
+
+    if (!foundAffiliate) {
       console.log(`[Affiliate Payout] No matching affiliate found for coupon code ${codeClean}`);
       return;
     }
 
-    const affiliateEmail = affiliate.email;
+    const affiliateEmail = foundAffiliate.email;
 
     // Calculate commission based on standard settings
     let commission = amountPaid * 0.20; // Default 20%
-    if (Math.abs(amountPaid - 199) < 10) commission = 39.80;
-    else if (Math.abs(amountPaid - 499) < 10) commission = 99.80;
-    else if (Math.abs(amountPaid - 999) < 10) commission = 199.80;
-    else if (Math.abs(amountPaid - 1999) < 50) commission = 399.80;
-    else if (Math.abs(amountPaid - 4999) < 50) commission = 999.80;
+    if (Math.abs(amountPaid - 399) < 10) commission = 79.80;
+    else if (Math.abs(amountPaid - 799) < 10) commission = 159.80;
+    else if (Math.abs(amountPaid - 3999) < 50) commission = 799.80;
+    else if (Math.abs(amountPaid - 7999) < 50) commission = 1599.80;
 
     // Log the "Sale" event in webnixo_events_affilate
     const eventId = `aff_sale_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -1308,14 +1322,49 @@ app.get("/api/payment/verify", async (req, res) => {
       const emailStr = email.toLowerCase();
 
       let plan_id = "pro_monthly";
-      if (amount === 4999) {
-        plan_id = "pro_yearly";
-      } else if (amount === 499) {
-        plan_id = "pro_monthly";
-      } else if (amount === 1999) {
-        plan_id = "starter_yearly";
-      } else if (amount === 199) {
-        plan_id = "starter_monthly";
+      const savedPayment = inMemoryPayments.get(order_id as string);
+      if (savedPayment && savedPayment.plan_id) {
+        plan_id = savedPayment.plan_id;
+      } else {
+        const supabaseAdmin = getSupabaseAdmin();
+        let fetchedPlan = null;
+        if (supabaseAdmin) {
+          try {
+            const { data, error } = await supabaseAdmin
+              .from("payments")
+              .select("plan_id")
+              .eq("order_id", order_id as string)
+              .maybeSingle();
+            if (!error && data && data.plan_id) {
+              fetchedPlan = data.plan_id;
+            }
+          } catch (dbErr) {
+            console.warn("Failed to lookup order_id from database:", dbErr);
+          }
+        }
+        
+        if (fetchedPlan) {
+          plan_id = fetchedPlan;
+        } else {
+          // Fallback based on new and old prices
+          if (amount === 7999) {
+            plan_id = "pro_yearly";
+          } else if (amount === 799) {
+            plan_id = "pro_monthly";
+          } else if (amount === 3999) {
+            plan_id = "starter_yearly";
+          } else if (amount === 399) {
+            plan_id = "starter_monthly";
+          } else if (amount === 4999) {
+            plan_id = "pro_yearly";
+          } else if (amount === 499) {
+            plan_id = "pro_monthly";
+          } else if (amount === 1999) {
+            plan_id = "starter_yearly";
+          } else if (amount === 199) {
+            plan_id = "starter_monthly";
+          }
+        }
       }
 
       const subscriptionDetails = {
@@ -1504,26 +1553,42 @@ app.post("/api/coupons/apply", async (req, res) => {
     const supabaseAdmin = getSupabaseAdmin();
     if (supabaseAdmin) {
       try {
-        // Query webnixo_profiles_affilate directly for custom_coupon_code or referral_code
+        // Query webnixo_profiles_affilate directly for custom_coupon_code or referral_code (case-insensitive)
         const { data: affiliate, error } = await supabaseAdmin
           .from("webnixo_profiles_affilate")
           .select("*")
-          .or(`custom_coupon_code.eq.${cleanCode},referral_code.eq.${cleanCode}`)
+          .or(`custom_coupon_code.ilike.${cleanCode},referral_code.ilike.${cleanCode}`)
           .maybeSingle();
 
+        let foundAffiliate = null;
         if (!error && affiliate) {
-          const isReferralCode = String(affiliate.referral_code || '').trim().toUpperCase() === cleanCode;
+          foundAffiliate = affiliate;
+        } else {
+          // Fallback to fetch and in-memory search if .or/.ilike fails
+          const { data: allAffiliates, error: fetchErr } = await supabaseAdmin
+            .from("webnixo_profiles_affilate")
+            .select("*");
+          if (!fetchErr && allAffiliates) {
+            foundAffiliate = allAffiliates.find((aff: any) => 
+              (aff.custom_coupon_code && String(aff.custom_coupon_code).trim().toUpperCase() === cleanCode) ||
+              (aff.referral_code && String(aff.referral_code).trim().toUpperCase() === cleanCode)
+            );
+          }
+        }
+
+        if (foundAffiliate) {
+          const isReferralCode = String(foundAffiliate.referral_code || '').trim().toUpperCase() === cleanCode;
           coupon = {
             code: cleanCode,
             discount_percent: 20, // Default 20% discount for affiliate coupons/referrals
             description: isReferralCode 
-              ? `Affiliate referral of ${affiliate.full_name}`
-              : `Affiliate promo code of ${affiliate.full_name}`,
+              ? `Affiliate referral of ${foundAffiliate.full_name}`
+              : `Affiliate promo code of ${foundAffiliate.full_name}`,
             is_active: true,
-            created_at: affiliate.joined_at || new Date().toISOString()
+            created_at: foundAffiliate.joined_at || new Date().toISOString()
           };
           isAffiliateCoupon = true;
-          affiliateEmail = affiliate.email;
+          affiliateEmail = foundAffiliate.email;
         }
       } catch (dbErr) {
         console.warn("Failed to check affiliate coupon from webnixo_profiles_affilate table:", dbErr);
