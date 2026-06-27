@@ -69,24 +69,16 @@ export default function App() {
   }, []);
 
   const navigate = (path: string) => {
-    // If the path contains dynamic chat ID, strip it to avoid dynamic routing
-    let cleanPath = path;
-    if (path.startsWith('/chat/')) {
-      cleanPath = '/chat';
-    } else if (path.startsWith('/legal/')) {
-      cleanPath = path;
-    }
-    
-    // Always use hash routing
-    window.location.hash = cleanPath;
-    setCurrentPath(cleanPath);
+    // Always use hash routing with the full path (including dynamic IDs)
+    window.location.hash = path;
+    setCurrentPath(path);
   };
 
   const settingsIsOpen = currentPath === '/settings';
 
   const handleCloseModal = () => {
     if (activeChatId) {
-      navigate('/chat');
+      navigate(`/chat/${activeChatId}`);
     } else {
       navigate('/');
     }
@@ -468,7 +460,7 @@ export default function App() {
       if (activeIdToSet) {
         setActiveChatId(activeIdToSet);
         if (currentPathName === '/' || currentPathName === '/chat' || currentPathName.startsWith('/chat/')) {
-          navigate('/chat');
+          navigate(`/chat/${activeIdToSet}`);
         }
       }
 
@@ -480,6 +472,18 @@ export default function App() {
       console.error("Error loading localStorage data:", e);
     }
   }, []);
+
+  // Sync back/forward navigation state to load appropriate active chat session
+  useEffect(() => {
+    if (currentPath.startsWith('/chat/')) {
+      const id = currentPath.substring(6);
+      if (id && chats.some(c => c.id === id)) {
+        if (activeChatId !== id) {
+          setActiveChatId(id);
+        }
+      }
+    }
+  }, [currentPath, chats, activeChatId]);
 
   // Sync activeChatId to localStorage for reload persistence
   useEffect(() => {
@@ -531,7 +535,7 @@ export default function App() {
     const updated = [newSession, ...chats];
     saveChats(updated);
     setActiveChatId(newId);
-    navigate('/chat');
+    navigate(`/chat/${newId}`);
     
     // Auto-open sidebar on mobile when creating a new chat to make sure they see it
     if (window.innerWidth < 768) {
@@ -541,7 +545,7 @@ export default function App() {
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
-    navigate('/chat');
+    navigate(`/chat/${id}`);
     if (window.innerWidth < 768) {
       setSidebarIsOpen(false); // Close sidebar on mobile select
     }
@@ -553,7 +557,7 @@ export default function App() {
     if (activeChatId === id) {
       if (updated.length > 0) {
         setActiveChatId(updated[0].id);
-        navigate('/chat');
+        navigate(`/chat/${updated[0].id}`);
       } else {
         setActiveChatId(null);
         navigate('/');
