@@ -879,6 +879,83 @@ async function logConversionToSupabase(conversion: {
   }
 }
 
+// Helper to reward affiliate if a coupon code matches an active affiliate profile
+async function rewardAffiliateIfApplicable(emailStr: string, amountPaid: number) {
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    if (!supabaseAdmin) return;
+
+    // Find the most recent coupon applied by this user
+    const recentUsage = inMemoryCouponUsages.find(u => u.email === emailStr.toLowerCase());
+    if (!recentUsage) return;
+
+    const codeClean = String(recentUsage.coupon_code).trim().toUpperCase();
+
+    // Check if this coupon belongs to an affiliate (webnixo_profiles_affilate)
+    const { data: affiliate, error } = await supabaseAdmin
+      .from("webnixo_profiles_affilate")
+      .select("*")
+      .or(`custom_coupon_code.eq.${codeClean},referral_code.eq.${codeClean}`)
+      .maybeSingle();
+
+    if (error || !affiliate) {
+      console.log(`[Affiliate Payout] No matching affiliate found for coupon code ${codeClean}`);
+      return;
+    }
+
+    const affiliateEmail = affiliate.email;
+
+    // Calculate commission based on standard settings
+    let commission = amountPaid * 0.20; // Default 20%
+    if (Math.abs(amountPaid - 199) < 10) commission = 39.80;
+    else if (Math.abs(amountPaid - 499) < 10) commission = 99.80;
+    else if (Math.abs(amountPaid - 999) < 10) commission = 199.80;
+    else if (Math.abs(amountPaid - 1999) < 50) commission = 399.80;
+    else if (Math.abs(amountPaid - 4999) < 50) commission = 999.80;
+
+    // Log the "Sale" event in webnixo_events_affilate
+    const eventId = `aff_sale_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const eventRecord = {
+      id: eventId,
+      user_email: affiliateEmail,
+      type: "Sale",
+      details: `Referral sale from customer ${emailStr} (Paid ₹${amountPaid}, Coupon ${codeClean})`,
+      timestamp: new Date().toISOString(),
+      commission: Number(commission.toFixed(2)),
+      created_at: new Date().toISOString()
+    };
+
+    const { error: insErr } = await supabaseAdmin
+      .from("webnixo_events_affilate")
+      .insert(eventRecord);
+
+    if (insErr) {
+      console.error(`[Affiliate Payout] Failed to insert Sale event for ${affiliateEmail}:`, insErr);
+    } else {
+      console.log(`[Affiliate Payout] Logged referral sale of ₹${amountPaid} for affiliate ${affiliateEmail}`);
+
+      // Now, update the affiliate's stats inside webnixo_profiles_affilate
+      const stats = affiliate.stats || { clicks: 0, signups: 0, sales: 0, commissionEarned: 0, unpaidCommission: 0, payoutStatus: "None" };
+      stats.sales = (Number(stats.sales) || 0) + 1;
+      stats.commissionEarned = Number(((Number(stats.commissionEarned) || 0) + commission).toFixed(2));
+      stats.unpaidCommission = Number(((Number(stats.unpaidCommission) || 0) + commission).toFixed(2));
+
+      const { error: updErr } = await supabaseAdmin
+        .from("webnixo_profiles_affilate")
+        .update({ stats, updated_at: new Date().toISOString() })
+        .eq("email", affiliateEmail);
+
+      if (updErr) {
+        console.error(`[Affiliate Stats] Failed to update stats for affiliate ${affiliateEmail}:`, updErr);
+      } else {
+        console.log(`[Affiliate Stats] Successfully updated stats for affiliate ${affiliateEmail}`);
+      }
+    }
+  } catch (err) {
+    console.error(`[Affiliate Payout] Error in rewardAffiliateIfApplicable:`, err);
+  }
+}
+
 // User Profile Sync Endpoint
 app.post("/api/profile", async (req, res) => {
   try {
@@ -1184,6 +1261,9 @@ app.get("/api/payment/verify", async (req, res) => {
         details: { plan_id: planId, order_id: orderIdStr, simulated: true }
       });
 
+      // Reward affiliate if an affiliate coupon code was used
+      await rewardAffiliateIfApplicable(emailStr, amount);
+
       return res.json({
         status: "PAID",
         amount,
@@ -1268,6 +1348,9 @@ app.get("/api/payment/verify", async (req, res) => {
         conversion_value: amount,
         details: { plan_id, order_id: order_id as string, simulated: false }
       });
+
+      // Reward affiliate if an affiliate coupon code was used
+      await rewardAffiliateIfApplicable(emailStr, amount);
 
       // Save premium subscription to Supabase if client is ready
       const supabaseAdmin = getSupabaseAdmin();
@@ -1367,16 +1450,20 @@ app.post("/api/coupons", async (req, res) => {
     inMemoryCoupons.set(cleanCode, couponRecord);
 
     // Save to Supabase
-    const supabaseAdmin = getSupabaseAdmin();
-    if (supabaseAdmin) {
-      const { error } = await supabaseAdmin
-        .from("coupons")
-        .upsert(couponRecord);
-      if (!error) {
-        console.log(`[Coupon Database] Synced coupon ${cleanCode} in Supabase successfully.`);
-      } else {
-        console.log(`[Coupon Database] Supabase sync skipped (table not ready yet). Saved locally.`);
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin) {
+        const { error } = await supabaseAdmin
+          .from("coupons")
+          .upsert(couponRecord);
+        if (!error) {
+          console.log(`[Coupon Database] Synced coupon ${cleanCode} in Supabase successfully.`);
+        } else {
+          console.log(`[Coupon Database] Supabase sync skipped (table not ready yet). Saved locally.`);
+        }
       }
+    } catch (dbErr) {
+      console.warn(`[Coupon Database] Supabase upsert error. Swallowing to maintain robust local fallback:`, dbErr);
     }
 
     return res.json({ success: true, coupon: couponRecord });
@@ -1397,9 +1484,84 @@ app.post("/api/coupons/apply", async (req, res) => {
     const emailStr = String(email).toLowerCase();
 
     // Check if coupon exists
-    const coupon = inMemoryCoupons.get(cleanCode);
+    let coupon = inMemoryCoupons.get(cleanCode);
+    let isAffiliateCoupon = false;
+    let affiliateEmail = "";
+
+    if (!coupon) {
+      const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin) {
+        try {
+          // Check webnixo_profiles_affilate by custom_coupon_code
+          const { data: affByCoupon, error: err1 } = await supabaseAdmin
+            .from("webnixo_profiles_affilate")
+            .select("*")
+            .eq("custom_coupon_code", cleanCode)
+            .maybeSingle();
+
+          if (!err1 && affByCoupon) {
+            coupon = {
+              code: cleanCode,
+              discount_percent: 20, // Default 20% discount for affiliate coupons
+              description: `Affiliate promo code of ${affByCoupon.full_name}`,
+              is_active: true,
+              created_at: affByCoupon.joined_at || new Date().toISOString()
+            };
+            isAffiliateCoupon = true;
+            affiliateEmail = affByCoupon.email;
+          } else {
+            // Check by referral_code
+            const { data: affByReferral, error: err2 } = await supabaseAdmin
+              .from("webnixo_profiles_affilate")
+              .select("*")
+              .eq("referral_code", cleanCode)
+              .maybeSingle();
+
+            if (!err2 && affByReferral) {
+              coupon = {
+                code: cleanCode,
+                discount_percent: 20, // Default 20% discount
+                description: `Affiliate referral of ${affByReferral.full_name}`,
+                is_active: true,
+                created_at: affByReferral.joined_at || new Date().toISOString()
+              };
+              isAffiliateCoupon = true;
+              affiliateEmail = affByReferral.email;
+            }
+          }
+        } catch (dbErr) {
+          console.warn("Failed to check affiliate coupon from webnixo_profiles_affilate table:", dbErr);
+        }
+      }
+    }
+
     if (!coupon || !coupon.is_active) {
       return res.status(200).json({ error: "❌ Invalid or expired coupon code. Check coupon database listings below." });
+    }
+
+    // Log the affiliate lead event to webnixo_events_affilate if applicable
+    if (isAffiliateCoupon && affiliateEmail) {
+      try {
+        const supabaseAdmin = getSupabaseAdmin();
+        if (supabaseAdmin) {
+          const eventId = `aff_evt_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+          const eventRecord = {
+            id: eventId,
+            user_email: affiliateEmail,
+            type: "Coupon Applied",
+            details: `User ${emailStr} applied coupon ${cleanCode} for plan ${planId || 'unknown'}`,
+            timestamp: new Date().toISOString(),
+            commission: 0,
+            created_at: new Date().toISOString()
+          };
+          await supabaseAdmin
+            .from("webnixo_events_affilate")
+            .insert(eventRecord);
+          console.log(`[Affiliate Event] Logged coupon apply lead event for ${affiliateEmail}`);
+        }
+      } catch (evtErr) {
+        console.warn("Failed to log affiliate event to webnixo_events_affilate:", evtErr);
+      }
     }
 
     const discountPercent = coupon.discount_percent;
@@ -1427,16 +1589,20 @@ app.post("/api/coupons/apply", async (req, res) => {
     inMemoryCouponUsages.unshift(usageRecord);
 
     // Sync usage with Supabase
-    const supabaseAdmin = getSupabaseAdmin();
-    if (supabaseAdmin) {
-      const { error } = await supabaseAdmin
-        .from("coupon_usages")
-        .insert(usageRecord);
-      if (!error) {
-        console.log(`[Coupon Usage DB] Successfully logged coupon application for ${emailStr}`);
-      } else {
-        console.log(`[Coupon Usage DB] Supabase usage log skipped (table not ready yet). Logged locally.`);
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin) {
+        const { error } = await supabaseAdmin
+          .from("coupon_usages")
+          .insert(usageRecord);
+        if (!error) {
+          console.log(`[Coupon Usage DB] Successfully logged coupon application for ${emailStr}`);
+        } else {
+          console.log(`[Coupon Usage DB] Supabase usage log skipped (table not ready yet). Logged locally.`);
+        }
       }
+    } catch (dbErr) {
+      console.warn(`[Coupon Usage DB] Supabase log error. Swallowing to maintain robust local fallback:`, dbErr);
     }
 
     // Record conversion event for coupon applied

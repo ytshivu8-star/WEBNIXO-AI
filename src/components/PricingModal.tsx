@@ -193,7 +193,44 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         setCouponError('Invalid coupon response from server database.');
       }
     } catch (err) {
-      setCouponError('❌ Connection error. Fallback to offline coupon database matching.');
+      console.warn("Connection error to server coupon database. Falling back to offline match...", err);
+      
+      // Attempt local offline matching against loaded dbCoupons state
+      const matchedLocal = dbCoupons.find(
+        (c) => c && String(c.code || '').trim().toUpperCase() === codeClean && c.is_active !== false
+      );
+
+      if (matchedLocal) {
+        const discountPercent = Number(matchedLocal.discount_percent || matchedLocal.discountPercent) || 50;
+        setAppliedCoupon({ code: codeClean, discountPercent });
+        setCouponSuccess(`🎉 Coupon ${codeClean} applied offline! Saved ${discountPercent}%`);
+        setCouponError('');
+        setShowConfetti(true);
+        setTimeout(() => {
+          setShowConfetti(false);
+        }, 4500);
+      } else {
+        // Fallback to static lists of standard coupons
+        const offlineCoupons: Record<string, number> = {
+          'WEBNIXO50': 50,
+          'SAVE90': 90,
+          'FIESTA95': 95,
+          'FREEPASS': 99
+        };
+
+        if (offlineCoupons[codeClean] !== undefined) {
+          const discountPercent = offlineCoupons[codeClean];
+          setAppliedCoupon({ code: codeClean, discountPercent });
+          setCouponSuccess(`🎉 Coupon ${codeClean} applied offline! Saved ${discountPercent}%`);
+          setCouponError('');
+          setShowConfetti(true);
+          setTimeout(() => {
+            setShowConfetti(false);
+          }, 4500);
+        } else {
+          setCouponError('❌ Connection error and offline fallback failed: Invalid coupon code.');
+        }
+      }
     } finally {
       setIsApplyingCoupon(false);
     }
