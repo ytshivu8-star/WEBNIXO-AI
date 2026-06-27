@@ -1391,36 +1391,49 @@ const inMemoryCoupons = new Map<string, {
   description: string;
   is_active: boolean;
   created_at: string;
-}>([
-  ["WEBNIXO50", { code: "WEBNIXO50", discount_percent: 50, description: "50% off on all credit plans", is_active: true, created_at: new Date().toISOString() }],
-  ["SAVE90", { code: "SAVE90", discount_percent: 90, description: "90% off for early adopters", is_active: true, created_at: new Date().toISOString() }],
-  ["FIESTA95", { code: "FIESTA95", discount_percent: 95, description: "95% off festive special offer", is_active: true, created_at: new Date().toISOString() }],
-  ["FREEPASS", { code: "FREEPASS", discount_percent: 99, description: "Developer ₹1 trial bypass", is_active: true, created_at: new Date().toISOString() }]
-]);
+}>([]);
 
 const inMemoryCouponUsages: any[] = [];
 
-// Get all coupons (with Supabase database fallback sync)
+// Get all coupons (mapped directly from webnixo_profiles_affilate in Supabase)
 app.get("/api/coupons", async (req, res) => {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     if (supabaseAdmin) {
       const { data, error } = await supabaseAdmin
-        .from("coupons")
-        .select("*");
+        .from("webnixo_profiles_affilate")
+        .select("email, full_name, referral_code, custom_coupon_code, joined_at");
       
-      if (!error && data && data.length > 0) {
-        // Sync back to local map to keep both in harmony
-        data.forEach((c: any) => {
-          inMemoryCoupons.set(c.code.toUpperCase(), {
-            code: c.code,
-            discount_percent: c.discount_percent,
-            description: c.description,
-            is_active: c.is_active ?? true,
-            created_at: c.created_at
-          });
+      if (!error && data) {
+        const couponsList: any[] = [];
+        data.forEach((item: any) => {
+          if (item.custom_coupon_code && item.custom_coupon_code.trim()) {
+            couponsList.push({
+              code: item.custom_coupon_code.trim().toUpperCase(),
+              discount_percent: 20, // Default 20% discount for affiliate coupon
+              description: `Affiliate promo of ${item.full_name}`,
+              is_active: true,
+              created_at: item.joined_at || new Date().toISOString()
+            });
+          }
+          if (item.referral_code && item.referral_code.trim()) {
+            couponsList.push({
+              code: item.referral_code.trim().toUpperCase(),
+              discount_percent: 20, // Default 20% discount for affiliate referral link
+              description: `Referral of ${item.full_name}`,
+              is_active: true,
+              created_at: item.joined_at || new Date().toISOString()
+            });
+          }
         });
-        return res.json({ source: "supabase", coupons: data });
+
+        // Sync local cache
+        inMemoryCoupons.clear();
+        couponsList.forEach((c: any) => {
+          inMemoryCoupons.set(c.code, c);
+        });
+
+        return res.json({ source: "supabase", coupons: couponsList });
       }
     }
     return res.json({ source: "local_cache", coupons: Array.from(inMemoryCoupons.values()) });
@@ -1484,54 +1497,44 @@ app.post("/api/coupons/apply", async (req, res) => {
     const emailStr = String(email).toLowerCase();
 
     // Check if coupon exists
-    let coupon = inMemoryCoupons.get(cleanCode);
+    let coupon = null;
     let isAffiliateCoupon = false;
     let affiliateEmail = "";
 
-    if (!coupon) {
-      const supabaseAdmin = getSupabaseAdmin();
-      if (supabaseAdmin) {
-        try {
-          // Check webnixo_profiles_affilate by custom_coupon_code
-          const { data: affByCoupon, error: err1 } = await supabaseAdmin
-            .from("webnixo_profiles_affilate")
-            .select("*")
-            .eq("custom_coupon_code", cleanCode)
-            .maybeSingle();
+    const supabaseAdmin = getSupabaseAdmin();
+    if (supabaseAdmin) {
+      try {
+        // Query webnixo_profiles_affilate directly for custom_coupon_code or referral_code
+        const { data: affiliate, error } = await supabaseAdmin
+          .from("webnixo_profiles_affilate")
+          .select("*")
+          .or(`custom_coupon_code.eq.${cleanCode},referral_code.eq.${cleanCode}`)
+          .maybeSingle();
 
-          if (!err1 && affByCoupon) {
-            coupon = {
-              code: cleanCode,
-              discount_percent: 20, // Default 20% discount for affiliate coupons
-              description: `Affiliate promo code of ${affByCoupon.full_name}`,
-              is_active: true,
-              created_at: affByCoupon.joined_at || new Date().toISOString()
-            };
-            isAffiliateCoupon = true;
-            affiliateEmail = affByCoupon.email;
-          } else {
-            // Check by referral_code
-            const { data: affByReferral, error: err2 } = await supabaseAdmin
-              .from("webnixo_profiles_affilate")
-              .select("*")
-              .eq("referral_code", cleanCode)
-              .maybeSingle();
-
-            if (!err2 && affByReferral) {
-              coupon = {
-                code: cleanCode,
-                discount_percent: 20, // Default 20% discount
-                description: `Affiliate referral of ${affByReferral.full_name}`,
-                is_active: true,
-                created_at: affByReferral.joined_at || new Date().toISOString()
-              };
-              isAffiliateCoupon = true;
-              affiliateEmail = affByReferral.email;
-            }
-          }
-        } catch (dbErr) {
-          console.warn("Failed to check affiliate coupon from webnixo_profiles_affilate table:", dbErr);
+        if (!error && affiliate) {
+          const isReferralCode = String(affiliate.referral_code || '').trim().toUpperCase() === cleanCode;
+          coupon = {
+            code: cleanCode,
+            discount_percent: 20, // Default 20% discount for affiliate coupons/referrals
+            description: isReferralCode 
+              ? `Affiliate referral of ${affiliate.full_name}`
+              : `Affiliate promo code of ${affiliate.full_name}`,
+            is_active: true,
+            created_at: affiliate.joined_at || new Date().toISOString()
+          };
+          isAffiliateCoupon = true;
+          affiliateEmail = affiliate.email;
         }
+      } catch (dbErr) {
+        console.warn("Failed to check affiliate coupon from webnixo_profiles_affilate table:", dbErr);
+      }
+    }
+
+    // Fallback to local inMemoryCoupons if synced
+    if (!coupon) {
+      coupon = inMemoryCoupons.get(cleanCode) || null;
+      if (coupon) {
+        isAffiliateCoupon = true;
       }
     }
 
