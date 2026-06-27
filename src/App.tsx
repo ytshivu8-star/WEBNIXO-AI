@@ -35,13 +35,23 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [sidebarIsOpen, setSidebarIsOpen] = useState(true);
 
-  // Custom High-Fidelity SPA Path Router (Supports both clean URLs and Hash fallback)
+  // Custom High-Fidelity SPA Path Router (Supports Hash routing exclusively to prevent 404 on reload)
   const getRoutePath = () => {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#')) {
-      return hash.substring(1) || '/';
+      const cleanHash = hash.substring(1);
+      return cleanHash || '/';
     }
-    return window.location.pathname;
+    // Automatically redirect default pathnames to hash routes to avoid 404s on refresh
+    const pathname = window.location.pathname;
+    if (pathname !== '/' && pathname !== '') {
+      setTimeout(() => {
+        window.location.hash = pathname;
+        window.history.replaceState(null, '', '/');
+      }, 0);
+      return pathname;
+    }
+    return '/';
   };
 
   const [currentPath, setCurrentPath] = useState(getRoutePath);
@@ -59,23 +69,24 @@ export default function App() {
   }, []);
 
   const navigate = (path: string) => {
-    const isUsingHash = window.location.hash && window.location.hash.startsWith('#');
-    if (isUsingHash) {
-      window.location.hash = path;
-      setCurrentPath(path);
-    } else {
-      if (window.location.pathname !== path) {
-        window.history.pushState(null, '', path);
-        setCurrentPath(path);
-      }
+    // If the path contains dynamic chat ID, strip it to avoid dynamic routing
+    let cleanPath = path;
+    if (path.startsWith('/chat/')) {
+      cleanPath = '/chat';
+    } else if (path.startsWith('/legal/')) {
+      cleanPath = path;
     }
+    
+    // Always use hash routing
+    window.location.hash = cleanPath;
+    setCurrentPath(cleanPath);
   };
 
   const settingsIsOpen = currentPath === '/settings';
 
   const handleCloseModal = () => {
     if (activeChatId) {
-      navigate(`/chat/${activeChatId}`);
+      navigate('/chat');
     } else {
       navigate('/');
     }
@@ -443,20 +454,21 @@ export default function App() {
         }
       }
 
+      if (!activeIdToSet) {
+        const lastActiveId = localStorage.getItem('webnixo_last_active_chat_id');
+        if (lastActiveId && loadedChats.some(c => c.id === lastActiveId)) {
+          activeIdToSet = lastActiveId;
+        }
+      }
+
       if (!activeIdToSet && loadedChats.length > 0) {
         activeIdToSet = loadedChats[0].id;
       }
 
       if (activeIdToSet) {
         setActiveChatId(activeIdToSet);
-        if (currentPathName === '/' || currentPathName === '/chat') {
-          const isUsingHash = window.location.hash && window.location.hash.startsWith('#');
-          if (isUsingHash) {
-            window.location.hash = `/chat/${activeIdToSet}`;
-          } else {
-            window.history.replaceState(null, '', `/chat/${activeIdToSet}`);
-          }
-          setCurrentPath(`/chat/${activeIdToSet}`);
+        if (currentPathName === '/' || currentPathName === '/chat' || currentPathName.startsWith('/chat/')) {
+          navigate('/chat');
         }
       }
 
@@ -469,17 +481,14 @@ export default function App() {
     }
   }, []);
 
-  // Sync back/forward navigation state to load appropriate active chat session
+  // Sync activeChatId to localStorage for reload persistence
   useEffect(() => {
-    if (currentPath.startsWith('/chat/')) {
-      const id = currentPath.substring(6);
-      if (id && chats.some(c => c.id === id)) {
-        if (activeChatId !== id) {
-          setActiveChatId(id);
-        }
-      }
+    if (activeChatId) {
+      localStorage.setItem('webnixo_last_active_chat_id', activeChatId);
+    } else {
+      localStorage.removeItem('webnixo_last_active_chat_id');
     }
-  }, [currentPath, chats]);
+  }, [activeChatId]);
 
   // Sync settings theme to HTML class
   useEffect(() => {
@@ -522,7 +531,7 @@ export default function App() {
     const updated = [newSession, ...chats];
     saveChats(updated);
     setActiveChatId(newId);
-    navigate(`/chat/${newId}`);
+    navigate('/chat');
     
     // Auto-open sidebar on mobile when creating a new chat to make sure they see it
     if (window.innerWidth < 768) {
@@ -532,7 +541,7 @@ export default function App() {
 
   const handleSelectChat = (id: string) => {
     setActiveChatId(id);
-    navigate(`/chat/${id}`);
+    navigate('/chat');
     if (window.innerWidth < 768) {
       setSidebarIsOpen(false); // Close sidebar on mobile select
     }
@@ -544,7 +553,7 @@ export default function App() {
     if (activeChatId === id) {
       if (updated.length > 0) {
         setActiveChatId(updated[0].id);
-        navigate(`/chat/${updated[0].id}`);
+        navigate('/chat');
       } else {
         setActiveChatId(null);
         navigate('/');
