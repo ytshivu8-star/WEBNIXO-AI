@@ -1238,30 +1238,8 @@ app.post("/api/payment/create-order", async (req, res) => {
 
     // If Cashfree API credentials are not set up, seamlessly trigger our high-performance sandbox checkout simulation!
     if (!appId || !secretKey) {
-      console.log(`[Cashfree PG Sandbox] API credentials missing. Initiating simulated checkout session for preview.`);
-      
-      // Self-contained stateless simulated order ID containing amount, planId, and base64/hex encoded email
-      const hexEmail = Buffer.from(email).toString("hex");
-      const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const returnUrl = `${returnBaseUrl}/payment-verify?order_id=${simulatedOrderId}`;
-
-      // Log simulated payment creation in DB
-      await logPaymentToSupabase({
-        order_id: simulatedOrderId,
-        email,
-        amount: Number(amount),
-        plan_id: planId,
-        status: "ACTIVE",
-        payment_session_id: `sim_session_${Date.now()}`
-      });
-
-      return res.status(200).json({
-        orderId: simulatedOrderId,
-        paymentSessionId: `sim_session_${Date.now()}`,
-        orderStatus: "ACTIVE",
-        returnUrl,
-        simulated: true
-      });
+      console.log(`[Cashfree PG Sandbox] API credentials missing.`);
+      return res.status(200).json({ error: "Cashfree API configuration is missing on the server.", canSimulate: false });
     }
 
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -1298,28 +1276,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[Cashfree PG] API Error:", errorText);
-      // Fallback to simulated checkout instead of throwing an error to let users preview the payment flow successfully
-      console.log(`[Cashfree PG Sandbox] Live order failed. Falling back to simulated order for a flawless user experience.`);
-      const hexEmail = Buffer.from(email).toString("hex");
-      const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const simulatedReturnUrl = `${returnBaseUrl}/payment-verify?order_id=${simulatedOrderId}`;
-      
-      await logPaymentToSupabase({
-        order_id: simulatedOrderId,
-        email,
-        amount: Number(amount),
-        plan_id: planId,
-        status: "ACTIVE",
-        payment_session_id: `sim_session_${Date.now()}`
-      });
-
-      return res.status(200).json({
-        orderId: simulatedOrderId,
-        paymentSessionId: `sim_session_${Date.now()}`,
-        orderStatus: "ACTIVE",
-        returnUrl: simulatedReturnUrl,
-        simulated: true
-      });
+      throw new Error(`Cashfree Order Creation failed: ${errorText}`);
     }
 
     const orderData = await response.json();
@@ -1344,10 +1301,9 @@ app.post("/api/payment/create-order", async (req, res) => {
     });
   } catch (err: any) {
     console.error("Payment Order Creation failure:", err);
-    // Return 200 status with error details so it doesn't trigger proxy HTML interception
     res.status(200).json({ 
       error: err.message,
-      canSimulate: true
+      canSimulate: false
     });
   }
 });
@@ -1362,60 +1318,9 @@ app.get("/api/payment/verify", async (req, res) => {
 
     const orderIdStr = String(order_id);
 
-    // Handle stateless sandbox order verification
     if (orderIdStr.startsWith("sim_order_")) {
-      console.log(`[Cashfree PG Sandbox] Verifying simulated order: ${orderIdStr}`);
-      const parts = orderIdStr.split("_");
-      // sim_order_{amount}_{planId}_{hexEmail}_{timestamp}
-      const amount = Number(parts[2]) || 49;
-      const planId = parts[3] || "pro_monthly";
-      let email = "demo@webnixo.ai";
-      try {
-        email = Buffer.from(parts[4], "hex").toString("utf8");
-      } catch (e) {
-        console.error("Failed to decode email from simulated order ID", e);
-      }
-
-      const emailStr = email.toLowerCase();
-      const subscriptionDetails = {
-        email: emailStr,
-        plan_id: planId,
-        amount,
-        order_id: orderIdStr,
-        status: "PAID",
-        updated_at: new Date().toISOString()
-      };
-
-      inMemorySubscriptions.set(emailStr, subscriptionDetails);
-      console.log(`[Subscription Sandbox] Simulated payment of ₹${amount} approved instantly for ${emailStr}`);
-
-      // Sync simulated payment as PAID to Supabase
-      await logPaymentToSupabase({
-        order_id: orderIdStr,
-        email: emailStr,
-        amount,
-        plan_id: planId,
-        status: "PAID",
-        payment_session_id: "simulated_success"
-      });
-
-      // Record conversion event
-      await logConversionToSupabase({
-        email: emailStr,
-        conversion_type: "payment_success",
-        conversion_value: amount,
-        details: { plan_id: planId, order_id: orderIdStr, simulated: true }
-      });
-
-      // Reward affiliate if an affiliate coupon code was used
-      await rewardAffiliateIfApplicable(emailStr, amount);
-
-      return res.json({
-        status: "PAID",
-        amount,
-        email,
-        isPaid: true
-      });
+      console.log(`[Cashfree PG Security] Blocked attempt to verify simulated order: ${orderIdStr}`);
+      return res.status(200).json({ error: "Simulated orders are no longer supported for security reasons." });
     }
 
     const appId = process.env.CASHFREE_APP_ID;
@@ -1867,6 +1772,11 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
-});
+// Ensure the process isn't running as a module when required by Vercel
+if (process.env.NODE_ENV !== 'production' || process.argv[1]?.endsWith('server.cjs') || process.argv[1]?.endsWith('server.ts')) {
+  startServer().catch((err) => {
+    console.error("Failed to start server:", err);
+  });
+}
+
+export default app;
