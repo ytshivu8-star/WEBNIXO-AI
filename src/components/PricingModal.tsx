@@ -489,7 +489,10 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         orderData = JSON.parse(responseText);
       } catch (parseErr) {
         console.error('[Billing] Response was not JSON:', responseText);
-        throw new Error('Invalid response from server.');
+        if (responseText.trim().startsWith('<')) {
+          throw new Error('Backend API not reachable. The server returned an HTML page (like a 404 or SPA fallback) instead of JSON. If you deployed to Vercel/Netlify as a static site, you must also deploy the Express backend (server.ts) or use a serverless function.');
+        }
+        throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`);
       }
 
       if (orderData.error) {

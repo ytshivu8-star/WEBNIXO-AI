@@ -89,7 +89,10 @@ export default function SettingsDialog({
       try {
         orderData = JSON.parse(responseText);
       } catch (err) {
-        throw new Error('Invalid response from server');
+        if (responseText.trim().startsWith('<')) {
+          throw new Error('Backend API not reachable. The server returned an HTML page instead of JSON. If deployed statically, you must also host the Express backend.');
+        }
+        throw new Error(`Invalid response from server. Content: ${responseText.substring(0, 100)}...`);
       }
 
       if (orderData.error) {

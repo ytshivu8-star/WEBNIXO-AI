@@ -1232,9 +1232,16 @@ app.post("/api/payment/create-order", async (req, res) => {
     const secretKey = process.env.CASHFREE_SECRET_KEY;
 
     const host = req.get("host") || "localhost:3000";
-    const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+    let protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+    // Force HTTPS for non-localhost to satisfy Cashfree's strict requirements
+    if (!host.includes("localhost") && !host.includes("127.0.0.1")) {
+      protocol = "https";
+    }
     const referer = req.get("referer") || `${protocol}://${host}/`;
-    const returnBaseUrl = referer.split("?")[0].split("#")[0];
+    let returnBaseUrl = referer.split("?")[0].split("#")[0];
+    if (!returnBaseUrl.endsWith("/")) {
+      returnBaseUrl += "/";
+    }
 
     // If Cashfree API credentials are not set up, return an explicit error to avoid bypassing checkout
     if (!appId || !secretKey) {
