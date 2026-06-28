@@ -1233,8 +1233,8 @@ app.post("/api/payment/create-order", async (req, res) => {
 
     const host = req.get("host") || "localhost:3000";
     const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
-    const referer = req.get("referer") || `${protocol}://${host}/`;
-    const returnBaseUrl = referer.split("?")[0].split("#")[0];
+    const referer = req.get("referer") || `${protocol}://${host}`;
+    const returnBaseUrl = referer.split("?")[0].split("#")[0].replace(/\/+$/, "");
 
     // If Cashfree API credentials are not set up, seamlessly trigger our high-performance sandbox checkout simulation!
     if (!appId || !secretKey) {
@@ -1734,6 +1734,21 @@ app.get("/api/coupons/usages", async (req, res) => {
 });
 
 // Setup Vite Dev Server / Static Assets
+// API 404 Handler
+app.use("/api", (req, res, next) => {
+  if (!res.headersSent) {
+    res.status(404).json({ error: `API Route Not Found: ${req.method} ${req.originalUrl}` });
+  } else {
+    next();
+  }
+});
+
+// Global API Error Handler
+app.use("/api", (err: any, req: any, res: any, next: any) => {
+  console.error("API Error:", err);
+  res.status(500).json({ error: err.message || "Internal Server Error" });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log("Setting up Vite development server middleware...");

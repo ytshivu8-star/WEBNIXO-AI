@@ -89,7 +89,8 @@ export default function SettingsDialog({
       try {
         orderData = JSON.parse(responseText);
       } catch (err) {
-        throw new Error('Failed to parse response from server.');
+        const preview = responseText.substring(0, 100);
+        throw new Error(`Server returned an invalid response (Status ${response.status}). Preview: ${preview}`);
       }
 
       if (orderData.error) {

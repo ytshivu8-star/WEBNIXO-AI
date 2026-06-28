@@ -489,7 +489,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         orderData = JSON.parse(responseText);
       } catch (parseErr) {
         console.error('[Billing] Response was not JSON:', responseText);
-        throw new Error('Gateway error caught. Failed to parse server response.');
+        const preview = responseText.substring(0, 100);
+        throw new Error(`Server returned an invalid response (Status ${response.status}). Preview: ${preview}`);
       }
 
       if (orderData.error) {
