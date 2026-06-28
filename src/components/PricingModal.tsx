@@ -778,7 +778,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             {appliedCoupon && (
               <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm">
-                -{appliedCoupon.discountPercent}% OFF
+                -₹50 OFF
               </div>
             )}
             
@@ -887,7 +887,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             
             {appliedCoupon && (
               <div className="absolute top-0 right-0 bg-sky-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm z-10">
-                -{appliedCoupon.discountPercent}% OFF
+                -₹50 OFF
               </div>
             )}
 

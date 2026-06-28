@@ -1302,7 +1302,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       console.log(`[Cashfree PG Sandbox] Live order failed. Falling back to simulated order for a flawless user experience.`);
       const hexEmail = Buffer.from(email).toString("hex");
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const simulatedReturnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
+      const simulatedReturnUrl = `${returnBaseUrl}#/payment-verify?order_id=${simulatedOrderId}`;
       
       await logPaymentToSupabase({
         order_id: simulatedOrderId,
@@ -1444,7 +1444,11 @@ app.get("/api/payment/verify", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[Cashfree PG] Verification API Error:", errorText);
-      throw new Error(`Cashfree Order Verification failed: ${errorText}`);
+      // Fallback gracefully instead of throwing
+      return res.status(200).json({ 
+        error: `Cashfree Order Verification failed: ${errorText}`,
+        isPaid: false
+      });
     }
 
     const orderData = await response.json();
@@ -1529,7 +1533,7 @@ app.get("/api/payment/verify", async (req, res) => {
     });
   } catch (err: any) {
     console.error("Payment Verification failure:", err);
-    res.status(500).json({ error: err.message });
+    res.status(200).json({ error: err.message });
   }
 });
 
