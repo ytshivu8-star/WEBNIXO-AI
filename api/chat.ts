@@ -10,7 +10,7 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  const { message, history, model, searchGrounding, attachments } = req.body;
+  const { message, history, model, searchGrounding, attachments } = req.body || {};
   let activeSearchGrounding = !!searchGrounding;
   try {
     if (!message && (!attachments || attachments.length === 0)) {

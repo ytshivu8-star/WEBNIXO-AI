@@ -15,7 +15,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { email, code, planId, originalPrice } = req.body;
+    const { email, code, planId, originalPrice } = req.body || {};
     if (!email || !code) {
       return res.status(200).json({ error: "email and coupon code are required parameters" });
     }

@@ -5,7 +5,7 @@ export default async function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  const { prompt } = req.body;
+  const { prompt } = req.body || {};
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: "Prompt is required" });
   }

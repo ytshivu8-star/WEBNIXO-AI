@@ -7,7 +7,7 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === "POST") {
     try {
-      const { email, name, theme, credits } = req.body;
+      const { email, name, theme, credits } = req.body || {};
       if (!email) {
         return res.status(200).json({ error: "email is a required parameter" });
       }

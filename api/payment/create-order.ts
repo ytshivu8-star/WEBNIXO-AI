@@ -11,7 +11,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { email, amount, planId } = req.body;
+    const { email, amount, planId } = req.body || {};
     if (!email || !amount || !planId) {
       return res.status(200).json({ error: "email, amount, and planId are required" });
     }

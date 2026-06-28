@@ -66,7 +66,7 @@ export default async function handler(req: any, res: any) {
   // POST: Create/Update a coupon in the database
   if (req.method === "POST") {
     try {
-      const { code, discount_percent, description } = req.body;
+      const { code, discount_percent, description } = req.body || {};
       if (!code || typeof discount_percent !== "number") {
         return res.status(200).json({ error: "code and discount_percent are required parameters" });
       }
