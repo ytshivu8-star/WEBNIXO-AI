@@ -9,13 +9,61 @@ import { ChatSession, Message, MODELS, AppSettings, Attachment } from './types';
 export const MODEL_CREDIT_COSTS: Record<string, number> = {
   'gemini-3.5-flash': 1,
   'deepseek': 1,
+  'deepseek-v3': 1,
+  'deepseek-r1': 1,
   'mistral': 2,
   'grok': 4,
   'perplexity': 4,
   'chatgpt': 5,
+  'chatgpt-4o': 5,
+  'chatgpt-4-4': 5,
   'claude': 5,
+  'claude-3-5-sonnet': 5,
+  'claude-3-opus': 5,
+  'claude-haiku-4-5': 2,
+  'claude-sonnet-4-0': 5,
+  'claude-sonnet-4-6': 5,
   'gemini': 5,
   'gemini-3.1-pro-preview': 5,
+  'gemini-3.5-pro': 5,
+  'chatgpt-5-4-nano': 1,
+  'chatgpt-5-4-mini': 5,
+  'chatgpt-5-mini': 2,
+  'chatgpt-5-nano': 1,
+  'chatgpt-4-1-nano': 1,
+  'chatgpt-4o-mini': 1,
+  'chatgpt-5-4': 5,
+  'chatgpt-5-2': 5,
+  'chatgpt-5-1': 5,
+  'chatgpt-5': 5,
+  'chatgpt-image-1': 10,
+  'chatgpt-image-1-5': 20,
+  'chatgpt-image-2': 30,
+  'chatgpt-o4-mini': 5,
+  'gemini-3-1-flash-lite': 1,
+  'gemini-3-flash': 1,
+  'gemini-2-5-lite': 1,
+  'gemini-2-5-flash': 2,
+  'gemini-3-1-pro': 5,
+  'gemini-2-5-pro': 5,
+  'nanobanana': 10,
+  'nanobanana-pro': 25,
+  'nanobanana-2': 35,
+  'deepseek-chat': 1,
+  'deepseek-reasoner': 5,
+  'perplexity-sonar': 5,
+  'perplexity-sonar-pro': 10,
+  'grok-3-mini': 2,
+  'grok-4-fast': 5,
+  'grok-4-1-fast': 5,
+  'grok-4': 10,
+  'grok-imagine': 40,
+  'grok-imagine-pro': 50,
+  'codestral': 5,
+  'mistral-small': 1,
+  'mistral-medium': 5,
+  'magistral-small': 1,
+  'magistral-medium': 5,
 };
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
@@ -136,7 +184,7 @@ export default function App() {
       const stored = localStorage.getItem(`webnixo_credits_remaining_${settings.userEmail || 'default'}`);
       if (stored !== null) return Number(stored);
       const plan = localStorage.getItem('webnixo_user_plan') || 'free';
-      return plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+      return plan === 'pro' ? 10000 : plan === 'starter' ? 2000 : 30;
     } catch {
       return 30;
     }
@@ -157,12 +205,12 @@ export default function App() {
     localStorage.setItem('webnixo_user_plan', plan);
     setIsPremium(plan !== 'free');
     localStorage.setItem('webnixo_premium_user', plan !== 'free' ? 'true' : 'false');
-    const limit = plan === 'pro' ? 3000 : plan === 'starter' ? 1000 : 30;
+    const limit = plan === 'pro' ? 10000 : plan === 'starter' ? 2000 : 30;
     updateCredits(limit, limit);
   };
 
   const handleResetCredits = () => {
-    const limit = userPlan === 'pro' ? 3000 : userPlan === 'starter' ? 1000 : 30;
+    const limit = userPlan === 'pro' ? 10000 : userPlan === 'starter' ? 2000 : 30;
     updateCredits(limit, limit);
   };
 
@@ -177,25 +225,25 @@ export default function App() {
           localStorage.setItem('webnixo_premium_user', 'true');
           
           const planId = data.plan?.plan_id || '';
-          if (planId.includes('pro')) {
+          if (planId.includes('pro') || planId.includes('premium')) {
             setUserPlan('pro');
             localStorage.setItem('webnixo_user_plan', 'pro');
-            setCreditsLimit(3000);
-            localStorage.setItem('webnixo_credits_limit', '3000');
+            setCreditsLimit(10000);
+            localStorage.setItem('webnixo_credits_limit', '10000');
             const key = `webnixo_credits_remaining_${emailStr}`;
             if (localStorage.getItem(key) === null) {
-              setCreditsRemaining(3000);
-              localStorage.setItem(key, '3000');
+              setCreditsRemaining(10000);
+              localStorage.setItem(key, '10000');
             }
           } else {
             setUserPlan('starter');
             localStorage.setItem('webnixo_user_plan', 'starter');
-            setCreditsLimit(1000);
-            localStorage.setItem('webnixo_credits_limit', '1000');
+            setCreditsLimit(2000);
+            localStorage.setItem('webnixo_credits_limit', '2000');
             const key = `webnixo_credits_remaining_${emailStr}`;
             if (localStorage.getItem(key) === null) {
-              setCreditsRemaining(1000);
-              localStorage.setItem(key, '1000');
+              setCreditsRemaining(2000);
+              localStorage.setItem(key, '2000');
             }
           }
         } else {
@@ -1088,6 +1136,7 @@ export default function App() {
         onChangeSettings={saveSettings}
         onClearAllChats={handleClearAllChats}
         onResetCredits={handleResetCredits}
+        modelCosts={MODEL_CREDIT_COSTS}
       />
 
       {/* Cashfree PG Pricing modal */}

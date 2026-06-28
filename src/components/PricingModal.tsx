@@ -210,7 +210,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       return;
     }
 
-    const targetPlanId = billingInterval === 'monthly' ? 'pro_monthly' : 'pro_yearly';
+    const targetPlanId = billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id;
     const targetPlanPrice = billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price;
 
     try {
@@ -353,68 +353,117 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
     setCouponInput('');
   };
 
-  const plans = {
+  const [plans, setPlans] = useState({
     starter: {
-      name: 'Starter Plan',
-      description: 'Perfect for regular users and essential multi-model tasks.',
-      credits: '1,000 Credits/Month',
+      name: 'Monthly Pass',
+      description: 'Target: Casual users',
+      credits: '2,000 Credits/Month',
       monthly: {
-        id: 'starter_monthly',
-        price: 199,
-        label: '₹199 / month',
-      },
-      yearly: {
-        id: 'starter_yearly',
-        price: 1999,
-        label: '₹1,999 / year',
-        savings: 'Save ₹389',
-      },
-      models: ['Gemini Flash', 'DeepSeek', 'Mistral'],
-      features: [
-        '1,000 Credits / Month',
-        'Gemini Flash (1 credit)',
-        'DeepSeek (1 credit)',
-        'Mistral (2 credits)',
-        'Standard server priority',
-      ],
-      color: 'emerald',
-    },
-    pro: {
-      name: 'Pro Plan',
-      description: 'Ultimate power for power users and elite reasoning models.',
-      credits: '3,000 Credits/Month',
-      monthly: {
-        id: 'pro_monthly',
+        id: 'monthly',
         price: 499,
         label: '₹499 / month',
       },
       yearly: {
-        id: 'pro_yearly',
-        price: 4999,
-        label: '₹4,999 / year',
-        savings: 'Save ₹989',
+        id: 'yearly',
+        price: 4990,
+        label: '₹4,990 / year',
+        savings: 'Save ₹998',
       },
       models: [
-        'Gemini Flash',
-        'DeepSeek',
-        'Mistral',
-        'GPT',
-        'Claude',
-        'Grok',
-        'Perplexity',
+        'GPT-5.4 nano', 'GPT-4o mini', 'Gemini 3 Flash', 'DeepSeek Chat', 'Mistral Small'
       ],
       features: [
-        '3,000 Credits / Month',
-        'Gemini Flash & DeepSeek (1 cr)',
-        'Mistral (2 cr) • Grok & Perplexity (4 cr)',
-        'GPT & Claude (5 cr)',
-        'Dual-model comparative workspace',
-        'Elite high-priority routing',
+        '2,000 Credits/Month',
+        'Fast responses',
+        'Low API cost',
+        'Good for everyday chatting, coding, writing, summaries',
+        'Image Generation: GPT Image 1, Nano Banana',
+        '50 images/month'
+      ],
+      color: 'emerald',
+    },
+    pro: {
+      name: 'Premium Pass',
+      description: 'Target: Power users, developers, students',
+      credits: '10,000 Credits/Month',
+      monthly: {
+        id: 'premium',
+        price: 999,
+        label: '₹999 / month',
+      },
+      yearly: {
+        id: 'premium_yearly', // Using fallback for yearly premium since it might not be in DB
+        price: 9999,
+        label: '₹9,999 / year',
+        savings: 'Save ₹1,989',
+      },
+      models: [
+        'GPT-5.4', 'GPT-5', 'o4 mini', 'Gemini 3.1 Pro', 'Claude 4.6', 'Grok 4', 'Perplexity Sonar Pro', 'DeepSeek Reasoner'
+      ],
+      features: [
+        '10,000 Credits/Month',
+        'Everything in Monthly Pass +',
+        'Premium AI Models',
+        'Premium Images',
+        'GPT Image 1.5 & 2, Nano Banana Pro & 2, Grok Imagine',
+        '300 images/month'
       ],
       color: 'sky',
       badge: 'Highly Popular',
     },
-  };
+  });
+
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const { data: planData, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true);
+        
+        if (planData && planData.length > 0) {
+          setPlans(prevPlans => {
+            const newPlans = { ...prevPlans };
+            
+            const monthlyPlan = planData.find(p => p.id === 'monthly');
+            if (monthlyPlan) {
+              newPlans.starter.monthly.price = Number(monthlyPlan.cost);
+              newPlans.starter.monthly.label = `₹${monthlyPlan.cost} / ${monthlyPlan.period}`;
+            }
+
+            const yearlyPlan = planData.find(p => p.id === 'yearly');
+            if (yearlyPlan) {
+              newPlans.starter.yearly.price = Number(yearlyPlan.cost);
+              newPlans.starter.yearly.label = `₹${yearlyPlan.cost} / ${yearlyPlan.period}`;
+              if (monthlyPlan) {
+                const savings = (Number(monthlyPlan.cost) * 12) - Number(yearlyPlan.cost);
+                newPlans.starter.yearly.savings = `Save ₹${Math.max(0, savings)}`;
+              }
+            }
+
+            const premiumPlan = planData.find(p => p.id === 'premium');
+            if (premiumPlan) {
+              newPlans.pro.monthly.price = Number(premiumPlan.cost);
+              newPlans.pro.monthly.label = `₹${premiumPlan.cost} / ${premiumPlan.period}`;
+              newPlans.pro.name = premiumPlan.name;
+              
+              // If there's no premium_yearly, we can just extrapolate it for now or if we added it to the DB we would fetch it
+              const premiumYearlyCost = Math.round(Number(premiumPlan.cost) * 10);
+              newPlans.pro.yearly.price = premiumYearlyCost;
+              newPlans.pro.yearly.label = `₹${premiumYearlyCost} / yr`;
+              newPlans.pro.yearly.savings = `Save ₹${Math.max(0, (Number(premiumPlan.cost) * 12) - premiumYearlyCost)}`;
+            }
+
+            return newPlans;
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching subscription plans for pricing modal:', err);
+      }
+    };
+    
+    fetchPrices();
+  }, []);
 
   const handleCheckout = async (planId: string, amount: number) => {
     try {
@@ -457,7 +506,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
 
       if (orderData.error) {
         // If the backend returned an explicit error (e.g. missing credentials) and offers a fallback or we can simulate it:
-        if (orderData.canSimulate || !process.env.CASHFREE_APP_ID) {
+        if (orderData.canSimulate) {
           console.log('[Billing Sandbox] Active error returned, switching to secure sandbox simulation...');
           const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
           const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
@@ -589,7 +638,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         {/* Close Button */}
         <button
           onClick={onClose}
-          className={`absolute top-4 right-4 p-1.5 rounded-full hover:opacity-80 transition-opacity z-10 ${
+          className={`absolute top-4 right-4 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:opacity-80 transition-opacity z-10 ${
             isDark ? 'bg-zinc-800 text-zinc-400 hover:text-white' : 'bg-zinc-100 text-zinc-500 hover:text-zinc-900'
           }`}
           title="Close modal"

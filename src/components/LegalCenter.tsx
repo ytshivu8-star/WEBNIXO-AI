@@ -139,7 +139,7 @@ export default function LegalCenter({ isOpen, onClose, initialTab = 'faq', theme
                   },
                   {
                     q: "How does the pricing and subscription work?",
-                    a: "We offer two clear passes: a Monthly Pass (₹49/month) and a Yearly Elite Pass (₹499/year). Both passes grant you full, high-speed access to all models, bypass active throttling, and enable live Google Search web-grounding queries."
+                    a: "We offer distinct tier passes, including a Monthly Pass and a Yearly Elite Pass. These passes grant you full, high-speed access to all models, bypass active throttling, and enable live Google Search web-grounding queries."
                   },
                   {
                     q: "Is there a free trial?",

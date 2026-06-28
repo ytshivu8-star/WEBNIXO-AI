@@ -142,7 +142,7 @@ export default function Sidebar({
         id={`chat-item-${chat.id}`}
         key={chat.id}
         onClick={() => !isEditing && onSelectChat(chat.id)}
-        className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm font-medium transition-all duration-150 ${
+        className={`group relative flex items-center gap-3 px-3 py-2.5 min-h-[44px] rounded-lg cursor-pointer text-sm font-medium transition-all duration-150 ${
           isActive 
             ? settings.theme === 'dark' ? 'bg-white/10 text-white border border-white/10 backdrop-blur-lg shadow-sm' : 'bg-black/5 text-zinc-900 border border-black/5 backdrop-blur-md shadow-xs' 
             : settings.theme === 'dark' ? 'text-zinc-400 hover:bg-white/5 hover:text-white' : 'text-zinc-600 hover:bg-black/5 hover:text-zinc-900'
@@ -460,7 +460,7 @@ export default function Sidebar({
                 <button
                   id="open-settings-btn-sidebar"
                   onClick={onOpenSettings}
-                  className={`p-1.5 rounded-lg transition-colors ${
+                  className={`p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg transition-colors ${
                     settings.theme === 'dark' ? 'hover:bg-white/15 text-zinc-400 hover:text-white' : 'hover:bg-black/10 text-zinc-500 hover:text-zinc-800'
                   }`}
                   title="Settings"
@@ -471,7 +471,7 @@ export default function Sidebar({
                   <button
                     id="logout-btn-sidebar"
                     onClick={onLogout}
-                    className={`p-1.5 rounded-lg transition-colors ${
+                    className={`p-1.5 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg transition-colors ${
                       settings.theme === 'dark' ? 'hover:bg-red-500/15 text-red-400 hover:text-red-300' : 'hover:bg-red-50 text-red-600 hover:text-red-700'
                     }`}
                     title="Log Out"

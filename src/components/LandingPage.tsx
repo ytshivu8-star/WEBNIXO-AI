@@ -55,6 +55,70 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
   const [error, setError] = useState('');
   const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(null);
   const [selectedCalculatedModels, setSelectedCalculatedModels] = useState<string[]>(['chatgpt', 'claude', 'grok']);
+  const [modelPrices, setModelPrices] = useState<any[]>([
+    { id: 'chatgpt', name: 'ChatGPT Plus (GPT-4o)', cost: 1650, logo: <ChatGPTLogo className="w-5 h-5" /> },
+    { id: 'claude', name: 'Claude Pro (Sonnet 3.5)', cost: 1650, logo: <AnthropicLogo className="w-5 h-5" /> },
+    { id: 'grok', name: 'X Premium+ (Grok 2)', cost: 1320, logo: <GrokLogo className="w-5 h-5" /> },
+    { id: 'perplexity', name: 'Perplexity Pro (Search)', cost: 1650, logo: <PerplexityLogo className="w-5 h-5" /> },
+    { id: 'mistral', name: 'Mistral Large Paid tier', cost: 1650, logo: <MistralLogo className="w-5 h-5" /> },
+  ]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([
+    { id: 'free', name: 'Starter Plan', cost: 0, period: 'forever' },
+    { id: 'monthly', name: 'Monthly Pass', cost: 49, period: 'mo' },
+    { id: 'premium', name: 'Premium Pass', cost: 99, period: 'mo' },
+    { id: 'yearly', name: 'Yearly Elite', cost: 499, period: 'yr' },
+  ]);
+
+  React.useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('model_prices')
+          .select('*')
+          .eq('is_active', true);
+        
+        if (data && data.length > 0) {
+          const getLogo = (id: string) => {
+            switch(id) {
+              case 'chatgpt': return <ChatGPTLogo className="w-5 h-5" />;
+              case 'claude': return <AnthropicLogo className="w-5 h-5" />;
+              case 'grok': return <GrokLogo className="w-5 h-5" />;
+              case 'perplexity': return <PerplexityLogo className="w-5 h-5" />;
+              case 'mistral': return <MistralLogo className="w-5 h-5" />;
+              default: return <WebnixoLogo className="w-5 h-5 text-emerald-400" />;
+            }
+          };
+
+          const fetchedPrices = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            cost: Number(item.cost),
+            logo: getLogo(item.id)
+          }));
+          setModelPrices(fetchedPrices);
+        }
+
+        const { data: planData, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true);
+        
+        if (planData && planData.length > 0) {
+          const fetchedPlans = planData.map(item => ({
+            id: item.id,
+            name: item.name,
+            cost: Number(item.cost),
+            period: item.period
+          }));
+          setSubscriptionPlans(fetchedPlans);
+        }
+      } catch (err) {
+        console.error('Error fetching prices:', err);
+      }
+    };
+    
+    fetchPrices();
+  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -419,6 +483,100 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               </p>
             </div>
 
+            {/* Animated Convergence Graphic */}
+            <div className="relative w-full h-[280px] md:h-[420px] flex items-center justify-center mt-10 md:mt-12 mb-8 overflow-visible">
+              {/* Central Hub */}
+              <motion.div 
+                className={`relative z-20 flex flex-col items-center justify-center w-20 h-20 md:w-28 md:h-28 rounded-full border shadow-2xl backdrop-blur-xl ${
+                  settings.theme === 'dark' ? 'bg-zinc-900/80 border-emerald-500/40' : 'bg-white/80 border-emerald-300'
+                }`}
+                animate={{ boxShadow: settings.theme === 'dark' ? ['0 0 30px rgba(16,185,129,0.2)', '0 0 80px rgba(16,185,129,0.5)', '0 0 30px rgba(16,185,129,0.2)'] : ['0 0 20px rgba(16,185,129,0.1)', '0 0 60px rgba(16,185,129,0.3)', '0 0 20px rgba(16,185,129,0.1)'] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping opacity-20" />
+                <WebnixoLogo className="w-8 h-8 md:w-12 md:h-12 text-emerald-500 mb-1 relative z-10" />
+                <span className="text-[8px] md:text-[10px] font-black tracking-widest text-emerald-500 relative z-10">WEBNIXO</span>
+              </motion.div>
+
+              {/* Pulsing Rings */}
+              <motion.div 
+                className={`absolute w-56 h-56 md:w-[350px] md:h-[350px] rounded-full border-2 border-dashed ${settings.theme === 'dark' ? 'border-zinc-700/50' : 'border-zinc-300/50'}`}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div 
+                className={`absolute w-72 h-72 md:w-[460px] md:h-[460px] rounded-full border ${settings.theme === 'dark' ? 'border-zinc-800/50' : 'border-zinc-200/50'}`}
+                animate={{ rotate: -360 }}
+                transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+              />
+
+              {/* AI Models Orbiting */}
+              {[
+                { Logo: ChatGPTLogo, name: "GPT-4o", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30", angle: 0 },
+                { Logo: AnthropicLogo, name: "Claude 3.5", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/30", angle: 45 },
+                { Logo: GeminiLogo, name: "Gemini", color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/30", angle: 90 },
+                { Logo: GrokLogo, name: "Grok 2", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/30", angle: 135 },
+                { Logo: DeepSeekLogo, name: "DeepSeek", color: "text-indigo-400", bg: "bg-indigo-400/10", border: "border-indigo-400/30", angle: 180 },
+                { Logo: Cpu, name: "Llama 3", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30", angle: 225 },
+                { Logo: PerplexityLogo, name: "Perplexity", color: "text-teal-400", bg: "bg-teal-400/10", border: "border-teal-400/30", angle: 270 },
+                { Logo: MistralLogo, name: "Mistral", color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30", angle: 315 },
+              ].map((model, idx) => (
+                <div
+                  key={model.name}
+                  className="absolute z-10 w-full h-full flex items-center justify-center pointer-events-none"
+                  style={{ transform: `rotate(${model.angle}deg)` }}
+                >
+                  {/* Radius container */}
+                  <div 
+                    className="relative flex flex-col items-center justify-start pointer-events-auto"
+                    style={{ transform: `translateY(clamp(-190px, -22vw, -120px))` }}
+                  >
+                    {/* Connection Line pointing INWARDS */}
+                    <motion.div 
+                      className={`absolute left-1/2 -translate-x-1/2 w-px origin-top ${settings.theme === 'dark' ? 'bg-gradient-to-b from-emerald-400/50 to-transparent' : 'bg-gradient-to-b from-emerald-500/50 to-transparent'}`}
+                      style={{ top: '100%', height: 'clamp(35px, 8vw, 75px)' }}
+                      animate={{ opacity: [0, 1, 0], scaleY: [0, 1, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: idx * 0.25 }}
+                    />
+                    
+                    {/* Pulsing Data Node on Line */}
+                    <motion.div 
+                      className="absolute left-1/2 -translate-x-1/2 w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,1)]"
+                      style={{ top: '100%' }}
+                      animate={{ top: ['100%', 'calc(100% + clamp(35px, 8vw, 75px))'], opacity: [0, 1, 0], scale: [0, 1.5, 0.5] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: idx * 0.25, ease: "easeIn" }}
+                    />
+
+                    {/* Icon Container (Rotated back) */}
+                    <div
+                      style={{ transform: `rotate(-${model.angle}deg)` }}
+                      className="group relative"
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ 
+                          y: { duration: 3, repeat: Infinity, ease: "easeInOut", delay: idx * 0.2 },
+                          scale: { delay: 0.3 + idx * 0.1, type: 'spring', stiffness: 200, damping: 20 },
+                          opacity: { delay: 0.3 + idx * 0.1 }
+                        }}
+                        className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-2xl border backdrop-blur-xl transition-all duration-300 group-hover:scale-110 group-hover:z-30 cursor-pointer ${model.bg} ${model.border} shadow-lg`}
+                      >
+                        <model.Logo className={`w-6 h-6 md:w-7 md:h-7 ${model.color}`} />
+                      </motion.div>
+                      <div className={`absolute top-full mt-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50`}>
+                        <span className={`text-[10px] font-black tracking-widest uppercase whitespace-nowrap px-3 py-1.5 rounded-lg shadow-xl border ${settings.theme === 'dark' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-200 text-zinc-900'}`}>
+                          {model.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* High-Animation Dual Campaign Grid (The Old Way vs. The Webnixo Way) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12 items-stretch relative z-10">
               {/* Card A: The Old Way (Red / Dispersed) */}
@@ -532,7 +690,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   <div className="text-right">
                     <span className="text-[11px] text-zinc-500 line-through block leading-none mr-1">₹11,400/mo</span>
                     <span className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400 leading-none block">
-                      Just ₹49/mo
+                      Just ₹{subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49}/mo
                     </span>
                     <span className="text-[9px] font-bold text-emerald-400 block mt-1 animate-pulse">
                       Use affiliate coupon/referral code for extra discounts!
@@ -609,13 +767,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
 
                 {/* Calculator checkbox checklist */}
                 <div className="space-y-2.5 mb-6">
-                  {[
-                    { id: 'chatgpt', name: 'ChatGPT Plus (GPT-4o)', cost: 1650, logo: <ChatGPTLogo className="w-5 h-5" /> },
-                    { id: 'claude', name: 'Claude Pro (Sonnet 3.5)', cost: 1650, logo: <AnthropicLogo className="w-5 h-5" /> },
-                    { id: 'grok', name: 'X Premium+ (Grok 2)', cost: 1320, logo: <GrokLogo className="w-5 h-5" /> },
-                    { id: 'perplexity', name: 'Perplexity Pro (Search)', cost: 1650, logo: <PerplexityLogo className="w-5 h-5" /> },
-                    { id: 'mistral', name: 'Mistral Large Paid tier', cost: 1650, logo: <MistralLogo className="w-5 h-5" /> },
-                  ].map((item) => {
+                  {modelPrices.map((item) => {
                     const isChecked = selectedCalculatedModels.includes(item.id);
                     return (
                       <div 
@@ -666,8 +818,8 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                     <span className="text-[9px] block uppercase font-bold opacity-50 tracking-wider">Isolated Accounts</span>
                     <span className="text-lg font-black font-mono text-rose-400">
                       ₹{selectedCalculatedModels.reduce((acc, id) => {
-                        const costMap: { [key: string]: number } = { chatgpt: 1650, claude: 1650, grok: 1320, perplexity: 1650, mistral: 1650 };
-                        return acc + (costMap[id] || 0);
+                        const model = modelPrices.find(m => m.id === id);
+                        return acc + (model ? model.cost : 0);
                       }, 0).toLocaleString('en-IN')}
                     </span>
                     <span className="text-[8px] block opacity-45">per month</span>
@@ -675,7 +827,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   <div className="border-l border-zinc-700/25">
                     <span className="text-[9px] block uppercase font-bold text-emerald-400 tracking-wider">Webnixo AI Plan</span>
                     <span className="text-lg font-black font-mono text-emerald-400">
-                      ₹49
+                      ₹{subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49}
                     </span>
                     <span className="text-[8px] block opacity-45 text-emerald-500/70">per month</span>
                   </div>
@@ -688,12 +840,13 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                     <span className="text-emerald-400 font-mono">
                       {(() => {
                         const original = selectedCalculatedModels.reduce((acc, id) => {
-                          const costMap: { [key: string]: number } = { chatgpt: 1650, claude: 1650, grok: 1320, perplexity: 1650, mistral: 1650 };
-                          return acc + (costMap[id] || 0);
+                          const model = modelPrices.find(m => m.id === id);
+                          return acc + (model ? model.cost : 0);
                         }, 0);
+                        const webnixoCost = subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49;
                         if (original === 0) return '0%';
-                        const savingsPercent = Math.round(((original - 49) / original) * 100);
-                        return `Save ${savingsPercent}% (₹${(original - 49).toLocaleString('en-IN')}/mo)`;
+                        const savingsPercent = Math.round(((original - webnixoCost) / original) * 100);
+                        return `Save ${Math.max(0, savingsPercent)}% (₹${Math.max(0, original - webnixoCost).toLocaleString('en-IN')}/mo)`;
                       })()}
                     </span>
                   </div>
@@ -703,11 +856,12 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                       animate={{ 
                         width: `${(() => {
                           const original = selectedCalculatedModels.reduce((acc, id) => {
-                            const costMap: { [key: string]: number } = { chatgpt: 1650, claude: 1650, grok: 1320, perplexity: 1650, mistral: 1650 };
-                            return acc + (costMap[id] || 0);
+                            const model = modelPrices.find(m => m.id === id);
+                            return acc + (model ? model.cost : 0);
                           }, 0);
+                          const webnixoCost = subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49;
                           if (original === 0) return 0;
-                          return ((original - 49) / original) * 100;
+                          return Math.max(0, ((original - webnixoCost) / original) * 100);
                         })()}%` 
                       }}
                       transition={{ type: "spring", stiffness: 80, damping: 15 }}
@@ -872,7 +1026,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                       Unparalleled Subscription ROI
                     </h4>
                     <p className={`text-[11px] leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                      Access every premier AI model under a single unified plan at ₹49/month. Reclaim over ₹7,900/month of subscription overhead while accessing superior performance.
+                      Access every premier AI model under a single unified plan at ₹{subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49}/month. Reclaim over ₹7,900/month of subscription overhead while accessing superior performance.
                     </p>
                   </div>
                 </motion.div>
@@ -913,7 +1067,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto relative z-10">
             {/* Free Plan */}
             <motion.div 
               whileHover={{ y: -10, scale: 1.02 }}
@@ -932,8 +1086,8 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   Great for basic questions and everyday brainstorming.
                 </p>
                 <div className="pt-2">
-                  <span className="text-4xl font-black text-zinc-400 font-display drop-shadow-sm">₹0</span>
-                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / forever</span>
+                  <span className="text-4xl font-black text-zinc-400 font-display drop-shadow-sm">₹{subscriptionPlans.find(p => p.id === 'free')?.cost ?? 0}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-60"> / {subscriptionPlans.find(p => p.id === 'free')?.period ?? 'forever'}</span>
                 </div>
                 <hr className={`border-t ${settings.theme === 'dark' ? 'border-white/10' : 'border-zinc-200'}`} />
                 <ul className="space-y-3 pt-2 text-xs font-medium">
@@ -990,8 +1144,8 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   Unlock all premium AI brains month-by-month. Cancel anytime.
                 </p>
                 <div className="pt-2">
-                  <span className="text-4xl font-black text-emerald-400 font-display drop-shadow-sm">₹49</span>
-                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / mo</span>
+                  <span className="text-4xl font-black text-emerald-400 font-display drop-shadow-sm">₹{subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / {subscriptionPlans.find(p => p.id === 'monthly')?.period ?? 'mo'}</span>
                 </div>
                 <hr className={`border-t ${settings.theme === 'dark' ? 'border-emerald-500/20' : 'border-emerald-500/10'}`} />
                 <ul className="space-y-3 pt-2 text-xs font-medium">
@@ -1021,6 +1175,59 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               </button>
             </motion.div>
 
+            {/* Premium Monthly Plan */}
+            <motion.div 
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative backdrop-blur-xl overflow-hidden group ${
+                settings.theme === 'dark'
+                  ? 'bg-purple-950/40 border-purple-500/30 hover:border-purple-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.15)]'
+                  : 'bg-gradient-to-b from-purple-50/80 to-white/80 border-purple-500/30 hover:shadow-2xl shadow-sm hover:border-purple-400'
+              }`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-[2rem] -z-10 rounded-full group-hover:bg-purple-500/30 transition-all duration-500" />
+              <div className="absolute top-0 right-0 bg-gradient-to-bl from-purple-500 to-purple-400 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-bl-xl shadow-lg z-10 flex items-center gap-1.5 border-b border-l border-purple-400/30">
+                <Zap className="w-3.5 h-3.5 animate-pulse" />
+                Premium
+              </div>
+              <div className="space-y-5 relative z-10">
+                <h3 className="text-2xl font-black tracking-tight">Premium Pass</h3>
+                <p className={`text-xs font-medium leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                  Unlock all features, higher limits & real-time grounding.
+                </p>
+                <div className="pt-2">
+                  <span className="text-4xl font-black text-purple-400 font-display drop-shadow-sm">₹{subscriptionPlans.find(p => p.id === 'premium')?.cost ?? 99}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / {subscriptionPlans.find(p => p.id === 'premium')?.period ?? 'mo'}</span>
+                </div>
+                <hr className={`border-t ${settings.theme === 'dark' ? 'border-purple-500/20' : 'border-purple-500/10'}`} />
+                <ul className="space-y-3 pt-2 text-xs font-medium">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Everything in Monthly Pass</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Real-time Google Grounding</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>Higher usage rate limits</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                    <span>High-priority fast servers</span>
+                  </li>
+                </ul>
+              </div>
+              <button 
+                onClick={handleGoogleSignIn}
+                className="w-full py-3 mt-8 rounded-xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-purple-500 to-purple-400 hover:from-purple-400 hover:to-purple-300 text-white transition-all duration-300 shadow-lg shadow-purple-500/20 cursor-pointer text-center relative z-10"
+              >
+                Sign In & Upgrade
+              </button>
+            </motion.div>
+
             {/* Pro Yearly Plan */}
             <motion.div 
               whileHover={{ y: -10, scale: 1.02 }}
@@ -1043,8 +1250,8 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   Ultimate non-stop premium access. Locked-in discount.
                 </p>
                 <div className="pt-2">
-                  <span className="text-4xl font-black text-sky-400 font-display drop-shadow-sm">₹499</span>
-                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / yr</span>
+                  <span className="text-4xl font-black text-sky-400 font-display drop-shadow-sm">₹{subscriptionPlans.find(p => p.id === 'yearly')?.cost ?? 499}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / {subscriptionPlans.find(p => p.id === 'yearly')?.period ?? 'yr'}</span>
                 </div>
                 <hr className={`border-t ${settings.theme === 'dark' ? 'border-sky-500/20' : 'border-sky-500/10'}`} />
                 <ul className="space-y-3 pt-2 text-xs font-medium">
@@ -1100,7 +1307,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               },
               {
                 q: "How does the pricing and subscription work?",
-                a: "We offer two clear passes: a Monthly Pass (₹49/month) and a Yearly Elite Pass (₹499/year). Both passes grant you full, high-speed access to all models, bypass active throttling, and enable live Google Search web-grounding queries."
+                a: `We offer two clear passes: a Monthly Pass (₹${subscriptionPlans.find(p => p.id === 'monthly')?.cost ?? 49}/month) and a Yearly Elite Pass (₹${subscriptionPlans.find(p => p.id === 'yearly')?.cost ?? 499}/year). Both passes grant you full, high-speed access to all models, bypass active throttling, and enable live Google Search web-grounding queries.`
               },
               {
                 q: "Is there a free trial?",

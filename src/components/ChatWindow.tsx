@@ -169,31 +169,32 @@ export function PerplexityLogo({ className = "w-6 h-6" }: { className?: string }
 }
 
 export function renderModelLogo(modelId: string, className: string = "w-5 h-5") {
-  switch (modelId) {
-    case 'gemini-3.5-flash':
-    case 'gemini-3.1-pro-preview':
-      return <WebnixoLogo className={className} />;
-    case 'chatgpt':
-      return <ChatGPTLogo className={className} />;
-    case 'claude':
-      return <AnthropicLogo className={className} />;
-    case 'gemini':
-      return <GeminiLogo className={className} />;
-    case 'grok':
-      return <GrokLogo className={className} />;
-    case 'deepseek':
-      return <DeepSeekLogo className={className} />;
-    case 'mistral':
-      return <MistralLogo className={className} />;
-    case 'perplexity':
-      return (
-        <div className={`${className} overflow-hidden rounded-md border border-neutral-700/10`}>
-          <PerplexityLogo className="w-full h-full object-cover" />
-        </div>
-      );
-    default:
-      return <WebnixoLogo className={className} />;
+  if (modelId.includes('chatgpt')) {
+    return <ChatGPTLogo className={className} />;
   }
+  if (modelId.includes('claude')) {
+    return <AnthropicLogo className={className} />;
+  }
+  if (modelId.includes('gemini')) {
+    return <GeminiLogo className={className} />;
+  }
+  if (modelId.includes('grok')) {
+    return <GrokLogo className={className} />;
+  }
+  if (modelId.includes('deepseek')) {
+    return <DeepSeekLogo className={className} />;
+  }
+  if (modelId.includes('mistral') || modelId.includes('magistral') || modelId.includes('codestral')) {
+    return <MistralLogo className={className} />;
+  }
+  if (modelId.includes('perplexity')) {
+    return (
+      <div className={`${className} overflow-hidden rounded-md border border-neutral-700/10`}>
+        <PerplexityLogo className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return <WebnixoLogo className={className} />;
 }
 
 interface ChatWindowProps {
@@ -216,10 +217,20 @@ interface ChatWindowProps {
 
 export function isModelAllowedForPlan(modelId: string, plan: 'free' | 'starter' | 'pro'): boolean {
   if (plan === 'pro') return true;
+
+  const starterModels = [
+    'chatgpt-5-4-nano', 'chatgpt-5-mini', 'chatgpt-5-nano', 'chatgpt-4-1-nano', 'chatgpt-4o-mini',
+    'gemini-3-1-flash-lite', 'gemini-3-flash', 'gemini-2-5-lite', 'gemini-2-5-flash',
+    'deepseek-chat', 'mistral-small', 'magistral-small',
+    'chatgpt-image-1', 'nanobanana', 'compare-all'
+  ];
+
   if (plan === 'starter') {
-    return ['gemini-3.5-flash', 'deepseek', 'mistral', 'compare-all'].includes(modelId);
+    return starterModels.includes(modelId);
   }
-  return ['gemini-3.5-flash', 'deepseek', 'compare-all'].includes(modelId);
+
+  // Free plan
+  return ['gemini-3-flash', 'deepseek-chat', 'compare-all'].includes(modelId);
 }
 
 export default function ChatWindow({
@@ -243,6 +254,7 @@ export default function ChatWindow({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<string | null>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -490,7 +502,7 @@ export default function ChatWindow({
             <button
               id="open-sidebar-header-btn"
               onClick={onToggleSidebar}
-              className={`p-2 rounded-lg transition-colors border ${
+              className={`p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-lg transition-colors border ${
                 settings.theme === 'dark' 
                   ? 'border-white/10 hover:bg-white/10 text-zinc-400 hover:text-white bg-white/5 backdrop-blur-md' 
                   : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600 hover:text-zinc-900 bg-white/50 backdrop-blur-md shadow-xs'
@@ -509,7 +521,7 @@ export default function ChatWindow({
                 const nextModel = activeSession.model === 'compare-all' ? 'gemini-3.5-flash' : 'compare-all';
                 handleModelChangeSecure(nextModel);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-display text-xs font-bold transition-all border uppercase tracking-wider select-none ${
+              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-xl font-display text-xs font-bold transition-all border uppercase tracking-wider select-none ${
                 activeSession.model === 'compare-all'
                   ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 shadow-xs'
                   : settings.theme === 'dark'
@@ -531,7 +543,7 @@ export default function ChatWindow({
             <button
               id="model-selector-dropdown-btn"
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl font-display text-sm font-semibold transition-all border ${
+              className={`flex items-center gap-2 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-xl font-display text-sm font-semibold transition-all border ${
                 settings.theme === 'dark'
                   ? 'bg-white/5 border-white/10 text-zinc-200 hover:text-white hover:bg-white/10 backdrop-blur-md'
                   : 'bg-white/60 border-zinc-200 text-zinc-700 hover:text-zinc-900 hover:bg-white/90 backdrop-blur-md shadow-2xs'
@@ -548,7 +560,7 @@ export default function ChatWindow({
                   className="fixed inset-0 z-40" 
                   onClick={() => setModelDropdownOpen(false)} 
                 />
-                <div className={`absolute left-0 mt-2 w-72 rounded-2xl shadow-2xl border p-2 z-50 backdrop-blur-2xl max-h-[80vh] overflow-y-auto ${
+                <div className={`absolute left-0 mt-2 w-[280px] sm:w-72 max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl border p-2 z-50 backdrop-blur-2xl max-h-[60vh] sm:max-h-[80vh] overflow-y-auto ${
                   settings.theme === 'dark' 
                     ? 'bg-[#1a1a1a]/95 border-white/10 text-zinc-100' 
                     : 'bg-white/95 border-zinc-200/80 text-zinc-800'
@@ -557,64 +569,86 @@ export default function ChatWindow({
                     <span className="text-xs uppercase tracking-wider font-semibold opacity-50">Choose a Model</span>
                   </div>
                   <div className="space-y-1">
-                    {MODELS.map((model) => {
-                      const isLocked = !isModelAllowedForPlan(model.id, userPlan || 'free');
-                      const credits = model.id === 'compare-all' ? 'Multi' : (model.id.includes('flash') || model.id.includes('deepseek') ? 1 : model.id.includes('mistral') ? 2 : model.id.includes('grok') || model.id.includes('perplexity') ? 4 : 5);
+                    {[
+                      { id: 'gemini', name: 'Google Gemini', logoId: 'gemini', models: MODELS.filter(m => m.id.includes('gemini') && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'chatgpt', name: 'ChatGPT', logoId: 'chatgpt', models: MODELS.filter(m => m.id.includes('chatgpt') && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'claude', name: 'Claude', logoId: 'claude', models: MODELS.filter(m => m.id.includes('claude') && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'deepseek', name: 'DeepSeek', logoId: 'deepseek', models: MODELS.filter(m => m.id.includes('deepseek') && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'grok', name: 'xAI Grok', logoId: 'grok', models: MODELS.filter(m => m.id.includes('grok') && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'mistral', name: 'Mistral', logoId: 'mistral', models: MODELS.filter(m => (m.id.includes('mistral') || m.id.includes('magistral') || m.id.includes('codestral')) && !m.id.includes('image') && !m.id.includes('imagine')) },
+                      { id: 'perplexity', name: 'Perplexity', logoId: 'perplexity', models: MODELS.filter(m => m.id.includes('perplexity') && !m.id.includes('image') && !m.id.includes('imagine')) }
+                    ].map((group) => {
+                      const isExpanded = expandedGroup === group.id;
+                      const hasSubModels = group.models.length > 1;
+                      const isActiveGroup = group.models.some(m => m.id === activeModel.id);
+                      
                       return (
-                        <button
-                          id={`model-select-opt-${model.id}`}
-                          key={model.id}
-                          onClick={() => {
-                            handleModelChangeSecure(model.id);
-                            setModelDropdownOpen(false);
-                          }}
-                          className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-2.5 ${
-                            activeModel.id === model.id
-                              ? settings.theme === 'dark' ? 'bg-[#212121] text-emerald-400' : 'bg-zinc-100 text-emerald-600'
-                              : isLocked
-                                ? 'opacity-50 hover:opacity-75 text-zinc-500'
+                        <div key={group.id} className="mb-1">
+                          <button
+                            onClick={() => {
+                              if (hasSubModels) {
+                                setExpandedGroup(isExpanded ? null : group.id);
+                              } else {
+                                handleModelChangeSecure(group.models[0].id);
+                                setModelDropdownOpen(false);
+                              }
+                            }}
+                            className={`w-full text-left p-2.5 min-h-[44px] rounded-xl transition-all flex items-center justify-between ${
+                              isActiveGroup && !isExpanded
+                                ? settings.theme === 'dark' ? 'bg-[#212121] text-emerald-400' : 'bg-zinc-100 text-emerald-600'
                                 : settings.theme === 'dark' ? 'hover:bg-[#212121]/50 text-zinc-300' : 'hover:bg-zinc-50 text-zinc-700'
-                          }`}
-                        >
-                          <div className="mt-0.5">
-                            {renderModelLogo(model.id, "w-5 h-5")}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <span className="text-sm font-semibold truncate block">{model.name}</span>
-                                {isLocked && <Lock className="w-3 h-3 text-red-400 shrink-0" />}
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <span className="text-[8px] font-black uppercase tracking-wider bg-zinc-700/20 text-zinc-400 px-1 py-0.5 rounded-md border border-zinc-700/10">
-                                  {credits} Cr
-                                </span>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
-                                  model.badge === 'Router'
-                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                                    : model.badge === 'Pro'
-                                      ? 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
-                                      : model.badge === 'ChatGPT'
-                                        ? 'bg-green-500/15 text-green-400 border border-green-500/20'
-                                        : model.badge === 'Anthropic'
-                                          ? 'bg-orange-500/15 text-orange-400 border border-orange-500/20'
-                                          : model.badge === 'Gemini'
-                                            ? 'bg-sky-500/15 text-sky-400 border border-sky-500/20'
-                                            : model.badge === 'xAI Grok'
-                                              ? 'bg-neutral-500/15 text-neutral-400 border border-neutral-500/20 dark:text-zinc-300'
-                                              : model.badge === 'DeepSeek'
-                                                ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
-                                                : model.badge === 'Mistral'
-                                                  ? 'bg-red-500/15 text-red-400 border border-red-500/20'
-                                                  : 'bg-teal-500/15 text-teal-400 border border-teal-500/20'
-                                }`}>
-                                  {model.badge}
-                                </span>
-                              </div>
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              {renderModelLogo(group.logoId, "w-5 h-5")}
+                              <span className="text-sm font-semibold">{group.name}</span>
                             </div>
-                            <span className="text-xs opacity-60 mt-0.5 block line-clamp-1">{model.description}</span>
-                          </div>
-                        </button>
+                            {hasSubModels && (
+                              <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            )}
+                          </button>
+                          
+                          {isExpanded && hasSubModels && (
+                            <div className="mt-1 space-y-1">
+                              {group.models.map((model) => {
+                                const isLocked = !isModelAllowedForPlan(model.id, userPlan || 'free');
+                                const credits = model.id === 'compare-all' ? 'Multi' : (model.id.includes('flash') || model.id.includes('deepseek') ? 1 : model.id.includes('mistral') ? 2 : model.id.includes('grok') || model.id.includes('perplexity') ? 4 : 5);
+                                return (
+                                  <button
+                                    id={`model-select-opt-${model.id}`}
+                                    key={model.id}
+                                    onClick={() => {
+                                      handleModelChangeSecure(model.id);
+                                      setModelDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left p-2.5 sm:p-2 min-h-[44px] sm:min-h-0 rounded-lg transition-all flex items-center gap-2.5 ${
+                                      activeModel.id === model.id
+                                        ? settings.theme === 'dark' ? 'bg-[#212121] text-emerald-400' : 'bg-zinc-100 text-emerald-600'
+                                        : isLocked
+                                          ? 'opacity-50 hover:opacity-75 text-zinc-500'
+                                          : settings.theme === 'dark' ? 'hover:bg-[#212121]/50 text-zinc-300' : 'hover:bg-zinc-50 text-zinc-700'
+                                    }`}
+                                  >
+                                    <div className="w-5 shrink-0" /> {/* Spacer for logo alignment */}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <span className="text-xs sm:text-xs font-semibold truncate block">{model.name}</span>
+                                          {isLocked && <Lock className="w-3 h-3 text-red-400 shrink-0" />}
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <span className="text-[9px] font-black uppercase tracking-wider bg-zinc-700/20 text-zinc-400 px-1.5 py-0.5 rounded-md border border-zinc-700/10">
+                                            {credits} Cr
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -1087,7 +1121,7 @@ export default function ChatWindow({
               <button
                 id="file-upload-tray-btn"
                 onClick={handleUploadClick}
-                className={`p-2 rounded-full transition-all ${
+                className={`p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-full transition-all ${
                   settings.theme === 'dark' ? 'hover:bg-zinc-800 text-zinc-400 hover:text-white' : 'hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800'
                 }`}
                 title="Attach file"
@@ -1102,7 +1136,7 @@ export default function ChatWindow({
                   setLocalSearchGrounding(nextVal);
                   onChangeSearchGrounding(nextVal);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-xs font-semibold border ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full transition-all text-xs font-semibold border ${
                   localSearchGrounding
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15'
                     : settings.theme === 'dark'
@@ -1119,7 +1153,7 @@ export default function ChatWindow({
                 id="optimize-prompt-btn"
                 onClick={handleOptimizePrompt}
                 disabled={!inputValue.trim() || isOptimizing}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-xs font-semibold border ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 min-h-[44px] sm:min-h-0 rounded-full transition-all text-xs font-semibold border ${
                   isOptimizing
                     ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 animate-pulse cursor-wait'
                     : inputValue.trim()
@@ -1140,7 +1174,7 @@ export default function ChatWindow({
               id="send-prompt-btn"
               onClick={handleSend}
               disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
-              className={`p-2 rounded-full transition-all ${
+              className={`p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center rounded-full transition-all ${
                 (inputValue.trim() || attachments.length > 0) && !isLoading
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md transform scale-100 active:scale-95'
                   : settings.theme === 'dark'

@@ -22,7 +22,8 @@ import {
   Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AppSettings } from '../types';
+import { AppSettings, MODELS } from '../types';
+import { renderModelLogo, isModelAllowedForPlan } from './ChatWindow';
 
 interface ImageGeneratorWindowProps {
   isPremium: boolean;
@@ -31,6 +32,7 @@ interface ImageGeneratorWindowProps {
   creditsRemaining: number;
   updateCredits: (remaining: number) => void;
   onToggleSidebar: () => void;
+  userPlan?: 'free' | 'starter' | 'pro';
 }
 
 interface GeneratedImage {
@@ -76,8 +78,11 @@ export default function ImageGeneratorWindow({
   creditsRemaining,
   updateCredits,
   onToggleSidebar,
+  userPlan = 'free',
 }: ImageGeneratorWindowProps) {
   const [prompt, setPrompt] = useState('');
+  const imageModels = MODELS.filter(m => m.id.includes('image') || m.id.includes('imagine'));
+  const [selectedModel, setSelectedModel] = useState(imageModels.length > 0 ? imageModels[0].id : '');
   const [selectedPreset, setSelectedPreset] = useState('none');
   const [selectedRatio, setSelectedRatio] = useState('1:1');
   const [selectedSize, setSelectedSize] = useState('1K');
@@ -182,6 +187,7 @@ export default function ImageGeneratorWindow({
           prompt: finalPrompt,
           aspectRatio: selectedRatio,
           imageSize: selectedSize,
+          modelId: selectedModel,
         })
       });
 
@@ -384,6 +390,47 @@ export default function ImageGeneratorWindow({
                   />
                 </div>
 
+                {/* AI Model Choice */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-400 tracking-wide uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>AI Model</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {imageModels.map((model) => {
+                      const isLocked = !isModelAllowedForPlan(model.id, userPlan);
+                      return (
+                        <button
+                          key={model.id}
+                          disabled={isGenerating}
+                          onClick={() => {
+                            if (isLocked) {
+                              onOpenPricing();
+                            } else {
+                              setSelectedModel(model.id);
+                            }
+                          }}
+                          className={`p-2 min-h-[44px] rounded-xl border text-left transition-all flex items-center gap-2 ${
+                            selectedModel === model.id && !isLocked
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold'
+                              : isLocked
+                                ? settings.theme === 'dark' ? 'border-white/5 opacity-50 cursor-not-allowed text-zinc-500' : 'border-zinc-200 opacity-50 cursor-not-allowed text-zinc-400'
+                                : settings.theme === 'dark'
+                                  ? 'border-white/5 hover:border-white/10 hover:bg-white/5 text-zinc-400'
+                                  : 'border-zinc-200 hover:bg-zinc-100 text-zinc-600'
+                          }`}
+                        >
+                          {renderModelLogo(model.id.includes('chatgpt') ? 'chatgpt' : model.id.includes('grok') ? 'grok' : 'gemini', "w-4 h-4 shrink-0")}
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                            <div className="text-xs font-bold truncate">{model.name}</div>
+                            {isLocked && <div className="text-[9px] bg-amber-500/10 text-amber-500 px-1 py-0.5 rounded uppercase font-black tracking-wider shrink-0">PRO</div>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* 2. Aspect Ratio Choice */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-zinc-400 tracking-wide uppercase flex items-center gap-1.5">
@@ -396,7 +443,7 @@ export default function ImageGeneratorWindow({
                         key={ratio.id}
                         disabled={isGenerating}
                         onClick={() => setSelectedRatio(ratio.id)}
-                        className={`py-2 px-1 rounded-lg border text-center transition-all ${
+                        className={`py-2 px-1 min-h-[44px] rounded-lg border text-center transition-all ${
                           selectedRatio === ratio.id
                             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold scale-[1.03]'
                             : settings.theme === 'dark'
@@ -424,7 +471,7 @@ export default function ImageGeneratorWindow({
                         key={preset.id}
                         disabled={isGenerating}
                         onClick={() => setSelectedPreset(preset.id)}
-                        className={`p-2 rounded-xl border text-left transition-all ${
+                        className={`p-2 min-h-[44px] rounded-xl border text-left transition-all ${
                           selectedPreset === preset.id
                             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold'
                             : settings.theme === 'dark'
@@ -451,7 +498,7 @@ export default function ImageGeneratorWindow({
                         key={size.id}
                         disabled={isGenerating}
                         onClick={() => setSelectedSize(size.id)}
-                        className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all ${
+                        className={`w-full p-2.5 min-h-[44px] rounded-xl border flex items-center justify-between text-left transition-all ${
                           selectedSize === size.id
                             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold'
                             : settings.theme === 'dark'
@@ -570,7 +617,7 @@ export default function ImageGeneratorWindow({
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={handleCopyPrompt}
-                            className={`p-2 rounded-xl border transition-all text-xs font-semibold flex items-center gap-1.5 ${
+                            className={`p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-xl border transition-all text-xs font-semibold flex items-center justify-center gap-1.5 ${
                               settings.theme === 'dark'
                                 ? 'bg-zinc-900 border-white/5 text-zinc-300 hover:bg-zinc-800'
                                 : 'bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-100'
@@ -584,7 +631,7 @@ export default function ImageGeneratorWindow({
                           <a
                             href={currentImage.url}
                             download={`webnixo-art-${Date.now()}.png`}
-                            className="p-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs tracking-tight flex items-center gap-1.5 shadow-xs transition-colors"
+                            className="p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs tracking-tight flex items-center justify-center gap-1.5 shadow-xs transition-colors"
                             title="Download master image"
                           >
                             <Download className="w-3.5 h-3.5" />

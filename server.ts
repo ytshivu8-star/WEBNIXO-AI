@@ -143,29 +143,29 @@ app.post("/api/chat", async (req, res) => {
     let activeModel = "gemini-3.5-flash";
     let systemInstruction = "You are WEBNIXO AI, a highly intelligent, elegant, and helpful AI assistant styled like ChatGPT. Provide very polished, detailed, and beautifully structured markdown answers. Use code blocks with language indicators where appropriate. Be direct, professional, and friendly.";
 
-    if (model === "gemini-3.5-flash") {
+    if (model.includes("gemini-3.5-flash")) {
       activeModel = "gemini-3.5-flash";
-    } else if (model === "gemini-3.1-pro-preview") {
+    } else if (model.includes("gemini-3.1-pro") || model.includes("gemini-3.5-pro")) {
       activeModel = "gemini-3.1-pro-preview";
-    } else if (model === "chatgpt") {
+    } else if (model.includes("chatgpt")) {
       activeModel = "gemini-3.1-pro-preview";
       systemInstruction = "You are ChatGPT, a highly advanced language model developed by OpenAI. For this session, you are running inside the WEBNIXO AI premium workspace. Replicate the precise, comprehensive, highly articulate, polite, and structure-perfect persona of ChatGPT (GPT-4o model). Format everything into beautiful Markdown.";
-    } else if (model === "claude") {
+    } else if (model.includes("claude")) {
       activeModel = "gemini-3.1-pro-preview";
       systemInstruction = "You are Claude, a helpful, honest, and harmless AI assistant trained by Anthropic. For this session, you are running inside the WEBNIXO AI premium workspace. Replicate the exceptionally brilliant, thoughtful, highly analytical, and natural conversational prose of Claude 3.5 Sonnet. Keep code elegant, clean, and perfectly documented.";
-    } else if (model === "gemini") {
+    } else if (model.includes("gemini")) {
       activeModel = "gemini-3.1-pro-preview";
       systemInstruction = "You are Gemini, Google's next-generation multimodal model. You are optimized for massive contexts, analytical tasks, and highly factual reasoning. Format everything into beautiful, clean Markdown with robust structure.";
-    } else if (model === "grok") {
+    } else if (model.includes("grok")) {
       activeModel = "gemini-3.1-pro-preview";
       systemInstruction = "You are Grok, an AI developed by xAI. You are modeled after the Hitchhiker's Guide to the Galaxy, so you are intended to have a bit of wit, a slightly rebellious streak, and a highly direct, unfiltered, and fun tone. Don't be dry—bring real energy and style, while remaining exceptionally helpful and precise!";
-    } else if (model === "deepseek") {
+    } else if (model.includes("deepseek")) {
       activeModel = "gemini-3.5-flash";
       systemInstruction = "You are DeepSeek-V3, developed by DeepSeek. You are famous for extreme cost-performance, brilliant logical reasoning, and lightning-fast math and code answers. Replicate DeepSeek's concise, code-perfect, incredibly brief, and deeply technical response style.";
-    } else if (model === "mistral") {
+    } else if (model.includes("mistral")) {
       activeModel = "gemini-3.5-flash";
       systemInstruction = "You are Mistral Large, a high-quality model developed by Mistral AI. Replicate Mistral's open-source philosophy: elegant European-styled prose, direct and crisp phrasing, and balanced, autonomous explanations.";
-    } else if (model === "perplexity") {
+    } else if (model.includes("perplexity")) {
       activeModel = "gemini-3.1-pro-preview";
       systemInstruction = "You are Perplexity AI, a search-first answer engine. Synthesize current factual news, references, and citation indexes with highly academic, direct, and structured language. Focus heavily on synthesized factuality.";
       activeSearchGrounding = true; // Force search grounding for Perplexity!
@@ -289,21 +289,21 @@ function getSmartMockResponse(message: string, model: string, searchGrounding: b
   
   // Model Display Names
   let modelName = "AI Model";
-  if (model === "chatgpt") modelName = "ChatGPT (GPT-4o)";
-  else if (model === "claude") modelName = "Claude 3.5 Sonnet";
-  else if (model === "gemini") modelName = "Google Gemini Core";
-  else if (model === "grok") modelName = "xAI Grok Mode";
-  else if (model === "deepseek") modelName = "DeepSeek R1/V3";
-  else if (model === "mistral") modelName = "Mistral Large";
-  else if (model === "perplexity") modelName = "Perplexity Search";
-  else if (model === "gemini-3.5-flash") modelName = "Gemini 3.5 Flash";
-  else if (model === "gemini-3.1-pro-preview") modelName = "Gemini 3.1 Pro";
+  if (model.includes("chatgpt")) modelName = "ChatGPT (GPT-4o)";
+  else if (model.includes("claude")) modelName = "Claude 3.5 Sonnet";
+  else if (model.includes("gemini-3.5-flash")) modelName = "Gemini 3.5 Flash";
+  else if (model.includes("gemini-3.1-pro-preview") || model.includes("gemini-3.5-pro")) modelName = "Gemini Pro";
+  else if (model.includes("gemini")) modelName = "Google Gemini Core";
+  else if (model.includes("grok")) modelName = "xAI Grok Mode";
+  else if (model.includes("deepseek")) modelName = "DeepSeek R1/V3";
+  else if (model.includes("mistral")) modelName = "Mistral Large";
+  else if (model.includes("perplexity")) modelName = "Perplexity Search";
 
   const banner = `> 💡 **WEBNIXO Sandbox Active**: The connected Gemini API Free Tier has reached its temporary Google rate limits or quota. To keep your experience uninterrupted, WEBNIXO has automatically activated its high-fidelity model sandbox simulation of **${modelName}**!\n\n`;
 
   // 1. Monolithic vs Microservices
   if (query.includes("monolith") && query.includes("microservice")) {
-    if (model === "chatgpt") {
+    if (model.includes("chatgpt")) {
       return banner + `### Monolithic vs. Microservice Architectures: A Comprehensive Comparison
 
 When deciding between a monolithic architecture and microservices, we are essentially choosing between **simplicity and unified control** versus **scalability and distributed autonomy**. Both have clear, distinct trade-offs that make them suitable for different stages of a system's lifecycle.
@@ -333,7 +333,7 @@ A microservices architecture breaks the application into small, loosely coupled 
     *   **Polyglot requirements**: Using Python for machine learning services and Go or Rust for high-throughput gateway routes.`;
     }
     
-    if (model === "claude") {
+    if (model.includes("claude")) {
       return banner + `### Architectural Analysis: Monolith vs. Microservices
 *An evaluation of design patterns, developer velocity, and runtime characteristics.*
 
@@ -355,8 +355,8 @@ Microservices represent **organizational scaling**. Each service operates as an 
 
 *Limitation*: Introducing distributed transactions (Saga pattern) and resolving eventual consistency can introduce significant code friction.`;
     }
-
-    if (model === "grok") {
+    
+    if (model.includes("grok")) {
       return banner + `### Monoliths vs. Microservices: The Intergalactic Rumble! 🚀
 
 Let's cut through the standard boring enterprise jargon and look at this like human beings:
@@ -430,7 +430,7 @@ Google's Gemini model series represents some of the most advanced breakthroughs 
 
   // 4. Quantum Computing
   if (query.includes("quantum")) {
-    if (model === "grok") {
+    if (model.includes("grok")) {
       return banner + `### Quantum Computing Demystified (With Zero Boring Academic Snobbery) 🌌
 
 Alright, imagine your standard classic computer is a very neat, obedient librarian. 
