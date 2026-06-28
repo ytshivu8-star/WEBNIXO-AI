@@ -6,7 +6,6 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
@@ -1734,24 +1733,11 @@ app.get("/api/coupons/usages", async (req, res) => {
 });
 
 // Setup Vite Dev Server / Static Assets
-// API 404 Handler
-app.use("/api", (req, res, next) => {
-  if (!res.headersSent) {
-    res.status(404).json({ error: `API Route Not Found: ${req.method} ${req.originalUrl}` });
-  } else {
-    next();
-  }
-});
-
-// Global API Error Handler
-app.use("/api", (err: any, req: any, res: any, next: any) => {
-  console.error("API Error:", err);
-  res.status(500).json({ error: err.message || "Internal Server Error" });
-});
-
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log("Setting up Vite development server middleware...");
+    const viteModuleName = "vite";
+    const { createServer: createViteServer } = await import(/* @vite-ignore */ viteModuleName);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
