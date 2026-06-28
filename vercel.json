@@ -1,16 +1,18 @@
 {
   "cleanUrls": true,
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build"
+      "source": "/api/payment/status",
+      "destination": "/api/payment/status.ts"
     },
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "rewrites": [
+      "source": "/api/payment/create-order",
+      "destination": "/api/payment/create-order.ts"
+    },
+    {
+      "source": "/api/payment/verify",
+      "destination": "/api/payment/verify.ts"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
