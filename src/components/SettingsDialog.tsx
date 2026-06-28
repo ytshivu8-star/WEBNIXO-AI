@@ -91,7 +91,7 @@ export default function SettingsDialog({
       } catch (err) {
         const hexEmail = Array.from(settings.userEmail || 'guest@webnixo.ai').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
         const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-        const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
+        const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
         
         setTimeout(() => {
           window.location.href = returnUrl;
@@ -103,7 +103,7 @@ export default function SettingsDialog({
         if (orderData.canSimulate) {
           const hexEmail = Array.from(settings.userEmail || 'guest@webnixo.ai').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
           const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-          const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
+          const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
           
           setTimeout(() => {
             window.location.href = returnUrl;
@@ -126,7 +126,7 @@ export default function SettingsDialog({
       }
 
       const cashfree: any = await loadCashfree();
-      const cashfreeInstance = cashfree({ mode: 'production' });
+      const cashfreeInstance = cashfree({ mode: orderData.environment || 'production' });
 
       cashfreeInstance.checkout({
         paymentSessionId: paymentSessionId,

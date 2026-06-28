@@ -193,7 +193,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
   const getDiscountedPrice = (originalPrice: number) => {
     if (!appliedCoupon) return originalPrice;
     if (appliedCoupon.code === 'FREEPASS') return 1; // Special ₹1 bypass for developer trials and easy tests!
-    const discountAmount = Math.round((originalPrice * appliedCoupon.discountPercent) / 100);
+    const discountAmount = 50; // Flat ₹50 discount
     return Math.max(1, originalPrice - discountAmount); // Ensure it is at least ₹1 to satisfy payment validation
   };
 
@@ -257,7 +257,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       if (matchedLocal) {
         const discountPercent = Number(matchedLocal.discount_percent || matchedLocal.discountPercent) || 20;
         setAppliedCoupon({ code: codeClean, discountPercent });
-        setCouponSuccess(`🎉 Coupon ${codeClean} applied offline! Saved ${discountPercent}%`);
+        setCouponSuccess(`🎉 Coupon ${codeClean} applied offline! Saved ₹50`);
         setCouponError('');
         setShowConfetti(true);
         
@@ -310,7 +310,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           if (foundAffiliate) {
             const discountPercent = 20; // Default 20%
             setAppliedCoupon({ code: codeClean, discountPercent });
-            setCouponSuccess(`🎉 Affiliate coupon ${codeClean} applied directly via Database! Saved ${discountPercent}%`);
+            setCouponSuccess(`🎉 Affiliate coupon ${codeClean} applied directly via Database! Saved ₹50`);
             setCouponError('');
             setShowConfetti(true);
 
@@ -495,7 +495,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         // Let's generate a simulated order on the client side directly if the backend had a gateway error
         const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
         const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-        const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
+        const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
         
         setIsProcessing(planId);
         setTimeout(() => {
@@ -510,7 +510,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           console.log('[Billing Sandbox] Active error returned, switching to secure sandbox simulation...');
           const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
           const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-          const returnUrl = `/payment-verify?order_id=${simulatedOrderId}`;
+          const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
           
           setIsProcessing(planId);
           setTimeout(() => {
@@ -539,7 +539,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
       // 3. Load and initialize Cashfree JS SDK v3
       const CashfreeInstance = await loadCashfreeSDK();
       const cashfree = CashfreeInstance({
-        mode: 'production' // Our production Cashfree API keys starting with cfsk_ma_prod_
+        mode: orderData.environment || 'production' // Our production Cashfree API keys starting with cfsk_ma_prod_ or sandbox mode for tests
       });
 
       console.log('[Billing] Cashfree SDK initialized. Launching checkout...');

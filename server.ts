@@ -1243,7 +1243,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       // Self-contained stateless simulated order ID containing amount, planId, and base64/hex encoded email
       const hexEmail = Buffer.from(email).toString("hex");
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const returnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
+      const returnUrl = `${returnBaseUrl}#/payment-verify?order_id=${simulatedOrderId}`;
 
       // Log simulated payment creation in DB
       await logPaymentToSupabase({
@@ -1265,11 +1265,14 @@ app.post("/api/payment/create-order", async (req, res) => {
     }
 
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const returnUrl = `${returnBaseUrl}payment-verify?order_id=${orderId}`;
+    const returnUrl = `${returnBaseUrl}#/payment-verify?order_id=${orderId}`;
 
-    console.log(`[Cashfree PG] Creating order ${orderId} for ${email} (Amount: INR ${amount})`);
+    const isSandbox = appId.startsWith("TEST");
+    const cashfreeBaseUrl = isSandbox ? "https://sandbox.cashfree.com/pg/orders" : "https://api.cashfree.com/pg/orders";
 
-    const response = await fetch("https://api.cashfree.com/pg/orders", {
+    console.log(`[Cashfree PG] Creating order ${orderId} for ${email} (Amount: INR ${amount}) in ${isSandbox ? 'sandbox' : 'production'} mode`);
+
+    const response = await fetch(cashfreeBaseUrl, {
       method: "POST",
       headers: {
         "x-client-id": appId,
@@ -1336,7 +1339,8 @@ app.post("/api/payment/create-order", async (req, res) => {
       orderId: orderData.order_id,
       paymentSessionId: orderData.payment_session_id,
       orderStatus: orderData.order_status,
-      returnUrl
+      returnUrl,
+      environment: isSandbox ? "sandbox" : "production"
     });
   } catch (err: any) {
     console.error("Payment Order Creation failure:", err);
@@ -1424,7 +1428,10 @@ app.get("/api/payment/verify", async (req, res) => {
 
     console.log(`[Cashfree PG] Verifying order status for ${order_id}...`);
 
-    const response = await fetch(`https://api.cashfree.com/pg/orders/${order_id}`, {
+    const isSandbox = appId.startsWith("TEST");
+    const cashfreeBaseUrl = isSandbox ? `https://sandbox.cashfree.com/pg/orders/${order_id}` : `https://api.cashfree.com/pg/orders/${order_id}`;
+
+    const response = await fetch(cashfreeBaseUrl, {
       method: "GET",
       headers: {
         "x-client-id": appId,
@@ -1746,7 +1753,7 @@ app.post("/api/coupons/apply", async (req, res) => {
     if (cleanCode === 'FREEPASS') {
       discountedPrice = 1;
     } else {
-      const discountAmt = Math.round((originalPriceNum * discountPercent) / 100);
+      const discountAmt = 50; // Flat ₹50 discount
       discountedPrice = Math.max(1, originalPriceNum - discountAmt);
     }
 
