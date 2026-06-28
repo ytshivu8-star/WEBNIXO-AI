@@ -1252,7 +1252,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const returnUrl = `${returnBaseUrl}#/payment-verify?order_id=${orderId}`;
 
-    const isSandbox = appId.startsWith("TEST");
+    const isSandbox = process.env.CASHFREE_ENV ? process.env.CASHFREE_ENV !== "production" : appId.startsWith("TEST");
     const cashfreeBaseUrl = isSandbox ? "https://sandbox.cashfree.com/pg/orders" : "https://api.cashfree.com/pg/orders";
 
     console.log(`[Cashfree PG] Creating order ${orderId} for ${email} (Amount: INR ${amount}) in ${isSandbox ? 'sandbox' : 'production'} mode`);
@@ -1391,7 +1391,7 @@ app.get("/api/payment/verify", async (req, res) => {
 
     console.log(`[Cashfree PG] Verifying order status for ${order_id}...`);
 
-    const isSandbox = appId.startsWith("TEST");
+    const isSandbox = process.env.CASHFREE_ENV ? process.env.CASHFREE_ENV !== "production" : appId.startsWith("TEST");
     const cashfreeBaseUrl = isSandbox ? `https://sandbox.cashfree.com/pg/orders/${order_id}` : `https://api.cashfree.com/pg/orders/${order_id}`;
 
     const response = await fetch(cashfreeBaseUrl, {

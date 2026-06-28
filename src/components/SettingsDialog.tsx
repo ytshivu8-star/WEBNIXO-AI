@@ -90,7 +90,7 @@ export default function SettingsDialog({
         orderData = JSON.parse(responseText);
       } catch (err) {
         if (responseText.trim().startsWith('<') || responseText.includes('NOT_FOUND')) {
-          throw new Error('Backend API not reachable. The server returned a 404 Not Found instead of JSON. Since you deployed to Vercel, you need to host the Express backend on a platform like Render or Railway.');
+          throw new Error('Backend API not reachable. The server returned a 404 Not Found instead of JSON.');
         }
         throw new Error(`Invalid response from server. Content: ${responseText.substring(0, 100)}...`);
       }
