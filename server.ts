@@ -1236,32 +1236,10 @@ app.post("/api/payment/create-order", async (req, res) => {
     const referer = req.get("referer") || `${protocol}://${host}/`;
     const returnBaseUrl = referer.split("?")[0].split("#")[0];
 
-    // If Cashfree API credentials are not set up, seamlessly trigger our high-performance sandbox checkout simulation!
+    // If Cashfree API credentials are not set up, return an explicit error to avoid bypassing checkout
     if (!appId || !secretKey) {
-      console.log(`[Cashfree PG Sandbox] API credentials missing. Initiating simulated checkout session for preview.`);
-      
-      // Self-contained stateless simulated order ID containing amount, planId, and base64/hex encoded email
-      const hexEmail = Buffer.from(email).toString("hex");
-      const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const returnUrl = `${returnBaseUrl}#/payment-verify?order_id=${simulatedOrderId}`;
-
-      // Log simulated payment creation in DB
-      await logPaymentToSupabase({
-        order_id: simulatedOrderId,
-        email,
-        amount: Number(amount),
-        plan_id: planId,
-        status: "ACTIVE",
-        payment_session_id: `sim_session_${Date.now()}`
-      });
-
-      return res.status(200).json({
-        orderId: simulatedOrderId,
-        paymentSessionId: `sim_session_${Date.now()}`,
-        orderStatus: "ACTIVE",
-        returnUrl,
-        simulated: true
-      });
+      console.log(`[Cashfree PG] API credentials missing.`);
+      return res.status(200).json({ error: "Cashfree API credentials are not configured on the server." });
     }
 
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -1298,28 +1276,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[Cashfree PG] API Error:", errorText);
-      // Fallback to simulated checkout instead of throwing an error to let users preview the payment flow successfully
-      console.log(`[Cashfree PG Sandbox] Live order failed. Falling back to simulated order for a flawless user experience.`);
-      const hexEmail = Buffer.from(email).toString("hex");
-      const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const simulatedReturnUrl = `${returnBaseUrl}#/payment-verify?order_id=${simulatedOrderId}`;
-      
-      await logPaymentToSupabase({
-        order_id: simulatedOrderId,
-        email,
-        amount: Number(amount),
-        plan_id: planId,
-        status: "ACTIVE",
-        payment_session_id: `sim_session_${Date.now()}`
-      });
-
-      return res.status(200).json({
-        orderId: simulatedOrderId,
-        paymentSessionId: `sim_session_${Date.now()}`,
-        orderStatus: "ACTIVE",
-        returnUrl: simulatedReturnUrl,
-        simulated: true
-      });
+      return res.status(200).json({ error: `Cashfree API Error: ${errorText}` });
     }
 
     const orderData = await response.json();
@@ -1346,8 +1303,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     console.error("Payment Order Creation failure:", err);
     // Return 200 status with error details so it doesn't trigger proxy HTML interception
     res.status(200).json({ 
-      error: err.message,
-      canSimulate: true
+      error: err.message
     });
   }
 });

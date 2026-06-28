@@ -489,46 +489,11 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         orderData = JSON.parse(responseText);
       } catch (parseErr) {
         console.error('[Billing] Response was not JSON:', responseText);
-        // Intercept gateway error pages and seamlessly run client-side simulation to guarantee the user is never blocked!
-        console.log('[Billing Sandbox] Gateway error caught. Auto-running sandbox simulation.');
-        
-        // Let's generate a simulated order on the client side directly if the backend had a gateway error
-        const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-        const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-        const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
-        
-        setIsProcessing(planId);
-        setTimeout(() => {
-          window.location.href = returnUrl;
-        }, 1200);
-        return;
+        throw new Error('Invalid response from server.');
       }
 
       if (orderData.error) {
-        // If the backend returned an explicit error (e.g. missing credentials) and offers a fallback or we can simulate it:
-        if (orderData.canSimulate) {
-          console.log('[Billing Sandbox] Active error returned, switching to secure sandbox simulation...');
-          const hexEmail = Array.from(userEmail).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-          const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-          const returnUrl = `/#/payment-verify?order_id=${simulatedOrderId}`;
-          
-          setIsProcessing(planId);
-          setTimeout(() => {
-            window.location.href = returnUrl;
-          }, 1200);
-          return;
-        }
         throw new Error(orderData.error || 'Failed to create payment order on the server.');
-      }
-
-      // 2. Check if order is simulated
-      if (orderData.simulated) {
-        console.log('[Billing Sandbox] Order is flagged as simulated. Redirecting seamlessly to returnUrl:', orderData.returnUrl);
-        setIsProcessing(planId);
-        setTimeout(() => {
-          window.location.href = orderData.returnUrl;
-        }, 1200);
-        return;
       }
 
       const { paymentSessionId } = orderData;
