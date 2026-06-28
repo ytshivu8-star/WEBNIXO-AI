@@ -12,7 +12,9 @@ export default function PaymentVerificationPage({ theme, onReturn }: PaymentVeri
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    const queryStr = hash.includes('?') ? hash.split('?')[1] : '';
+    const params = new URLSearchParams(queryStr || window.location.search);
     const orderId = params.get('order_id');
 
     if (!orderId) {
