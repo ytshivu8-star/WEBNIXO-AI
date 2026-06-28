@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ChatSession, Message, MODELS, AppSettings, Attachment } from './types';
 
 export const MODEL_CREDIT_COSTS: Record<string, number> = {
@@ -84,49 +85,18 @@ export default function App() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [sidebarIsOpen, setSidebarIsOpen] = useState(true);
 
-  // Custom High-Fidelity SPA Path Router (Supports Hash routing exclusively to prevent 404 on reload)
-  const getRoutePath = () => {
-    const hash = window.location.hash;
-    if (hash && hash.startsWith('#')) {
-      const cleanHash = hash.substring(1);
-      return cleanHash || '/';
-    }
-    // Automatically redirect default pathnames to hash routes to avoid 404s on refresh
-    const pathname = window.location.pathname;
-    if (pathname !== '/' && pathname !== '') {
-      setTimeout(() => {
-        window.location.hash = pathname;
-        window.history.replaceState(null, '', '/');
-      }, 0);
-      return pathname;
-    }
-    return '/';
-  };
-
-  const [currentPath, setCurrentPath] = useState(getRoutePath);
-
-  useEffect(() => {
-    const handleNavigationEvent = () => {
-      setCurrentPath(getRoutePath());
-    };
-    window.addEventListener('popstate', handleNavigationEvent);
-    window.addEventListener('hashchange', handleNavigationEvent);
-    return () => {
-      window.removeEventListener('popstate', handleNavigationEvent);
-      window.removeEventListener('hashchange', handleNavigationEvent);
-    };
-  }, []);
+  const location = useLocation();
+  const reactNavigate = useNavigate();
+  const currentPath = location.pathname;
 
   const [previousPath, setPreviousPath] = useState<string>('/');
 
   const navigate = (path: string) => {
-    const fromPath = getRoutePath();
+    const fromPath = currentPath;
     if (fromPath !== '/pricing' && fromPath !== '/settings' && !fromPath.startsWith('/auth/callback')) {
       setPreviousPath(fromPath);
     }
-    // Always use hash routing with the full path (including dynamic IDs)
-    window.location.hash = path;
-    setCurrentPath(path);
+    reactNavigate(path);
   };
 
   const settingsIsOpen = currentPath === '/settings';
@@ -407,7 +377,7 @@ export default function App() {
 
   // Popup Auth Callback listener (runs when this page is loaded inside popup frame)
   useEffect(() => {
-    if (getRoutePath().startsWith('/auth/callback')) {
+    if (currentPath.startsWith('/auth/callback')) {
       const handlePopupCallback = async () => {
         try {
           const isPopup = window.opener || window.name === 'google_oauth_popup';
@@ -494,7 +464,7 @@ export default function App() {
       }
 
       // Check current URL for deep link to a specific chat session (supports both pathname and hash)
-      const currentPathName = getRoutePath();
+      const currentPathName = window.location.pathname;
       let activeIdToSet: string | null = null;
       if (currentPathName.startsWith('/chat/')) {
         const pathId = currentPathName.substring(6);
@@ -994,9 +964,8 @@ export default function App() {
   const activeSession = getActiveSession();
 
   // Intercept special routes
-  const currentRoutedPath = getRoutePath();
-  const isAuthCallbackPath = currentRoutedPath.startsWith('/auth/callback');
-  const isPaymentVerifyPath = currentRoutedPath.startsWith('/payment-verify');
+  const isAuthCallbackPath = currentPath.startsWith('/auth/callback');
+  const isPaymentVerifyPath = currentPath.startsWith('/payment-verify');
 
   if (isAuthCallbackPath) {
     return (
@@ -1099,7 +1068,7 @@ export default function App() {
           </button>
         </div>
 
-        {currentRoutedPath === '/image-generator' ? (
+        {currentPath === '/image-generator' ? (
           <ImageGeneratorWindow
             isPremium={isPremium}
             onOpenPricing={() => navigate('/pricing')}

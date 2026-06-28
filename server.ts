@@ -1243,7 +1243,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       // Self-contained stateless simulated order ID containing amount, planId, and base64/hex encoded email
       const hexEmail = Buffer.from(email).toString("hex");
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const returnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
+      const returnUrl = `${returnBaseUrl}/payment-verify?order_id=${simulatedOrderId}`;
 
       // Log simulated payment creation in DB
       await logPaymentToSupabase({
@@ -1265,7 +1265,7 @@ app.post("/api/payment/create-order", async (req, res) => {
     }
 
     const orderId = `order_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const returnUrl = `${returnBaseUrl}payment-verify?order_id=${orderId}`;
+    const returnUrl = `${returnBaseUrl}/payment-verify?order_id=${orderId}`;
 
     const isSandbox = appId.startsWith("TEST");
     const cashfreeBaseUrl = isSandbox ? "https://sandbox.cashfree.com/pg/orders" : "https://api.cashfree.com/pg/orders";
@@ -1302,7 +1302,7 @@ app.post("/api/payment/create-order", async (req, res) => {
       console.log(`[Cashfree PG Sandbox] Live order failed. Falling back to simulated order for a flawless user experience.`);
       const hexEmail = Buffer.from(email).toString("hex");
       const simulatedOrderId = `sim_order_${amount}_${planId}_${hexEmail}_${Date.now()}`;
-      const simulatedReturnUrl = `${returnBaseUrl}payment-verify?order_id=${simulatedOrderId}`;
+      const simulatedReturnUrl = `${returnBaseUrl}/payment-verify?order_id=${simulatedOrderId}`;
       
       await logPaymentToSupabase({
         order_id: simulatedOrderId,

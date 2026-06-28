@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   MessageSquare, 
@@ -61,6 +62,8 @@ export default function Sidebar({
   creditsRemaining,
   creditsLimit,
 }: SidebarProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editTitleValue, setEditTitleValue] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -297,7 +300,7 @@ export default function Sidebar({
                 }
               }}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-left cursor-pointer ${
-                window.location.hash !== '#/image-generator'
+                location.pathname !== '/image-generator'
                   ? settings.theme === 'dark' ? 'bg-white/5 text-white' : 'bg-black/5 text-zinc-900 font-extrabold'
                   : settings.theme === 'dark' ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-600 hover:text-zinc-900 hover:bg-black/5'
               }`}
@@ -308,10 +311,10 @@ export default function Sidebar({
 
             <button
               onClick={() => {
-                window.location.hash = '/image-generator';
+                navigate('/image-generator');
               }}
               className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-left cursor-pointer ${
-                window.location.hash === '#/image-generator'
+                location.pathname === '/image-generator'
                   ? settings.theme === 'dark' ? 'bg-white/5 text-white' : 'bg-black/5 text-zinc-900 font-extrabold'
                   : settings.theme === 'dark' ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-600 hover:text-zinc-900 hover:bg-black/5'
               }`}
