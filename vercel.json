@@ -1,9 +1,19 @@
 {
   "cleanUrls": true,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    },
+    {
+      "src": "server.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "/server.ts"
     },
     {
       "source": "/((?!api/|assets/|static/|favicon.ico|_next/).*)",

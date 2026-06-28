@@ -489,8 +489,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         orderData = JSON.parse(responseText);
       } catch (parseErr) {
         console.error('[Billing] Response was not JSON:', responseText);
-        if (responseText.trim().startsWith('<')) {
-          throw new Error('Backend API not reachable. The server returned an HTML page (like a 404 or SPA fallback) instead of JSON. If you deployed to Vercel/Netlify as a static site, you must also deploy the Express backend (server.ts) or use a serverless function.');
+        if (responseText.trim().startsWith('<') || responseText.includes('NOT_FOUND')) {
+          throw new Error('Backend API not reachable. The server returned a 404 Not Found instead of JSON. Since you deployed to Vercel, you need to host the Express backend (server.ts) on a full-stack platform like Render or Railway.');
         }
         throw new Error(`Invalid response from server: ${responseText.substring(0, 100)}...`);
       }

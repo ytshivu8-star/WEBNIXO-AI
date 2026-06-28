@@ -1834,6 +1834,12 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error("Failed to start server:", err);
-});
+// Only start the server automatically if we are not running in a serverless environment like Vercel
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    console.error("Failed to start server:", err);
+  });
+}
+
+// Export the Express app for serverless environments
+export default app;
