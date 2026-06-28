@@ -8,6 +8,8 @@ export const inMemorySubscriptions = new Map<string, any>();
 export const inMemoryPayments = new Map<string, any>();
 export const inMemoryConversions = new Map<string, any>();
 export const inMemoryCouponUsages: any[] = [];
+export const inMemoryProfiles = new Map<string, any>();
+export const inMemoryCoupons = new Map<string, any>();
 
 let supabaseAdminInstance: any = null;
 
@@ -100,6 +102,40 @@ export async function logConversionToSupabase(conversion: {
       }
     } catch (e) {
       console.log(`[DB Conversion] Supabase query catch block hit. Fallback to cache.`);
+    }
+  }
+}
+
+export async function logProfileToSupabase(profile: {
+  email: string;
+  name: string;
+  theme?: string;
+  credits_remaining?: number;
+}) {
+  const emailStr = profile.email.toLowerCase();
+  const record = {
+    email: emailStr,
+    name: profile.name,
+    theme: profile.theme || 'dark',
+    credits_remaining: typeof profile.credits_remaining === 'number' ? profile.credits_remaining : 30,
+    updated_at: new Date().toISOString()
+  };
+
+  inMemoryProfiles.set(emailStr, record);
+
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin) {
+    try {
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .upsert(record);
+      if (!error) {
+        console.log(`[DB Profile] Successfully synced profile to Supabase for ${emailStr}`);
+      } else {
+        console.log(`[DB Profile] Supabase profiles sync skipped (table not initialized yet). Saved in memory.`);
+      }
+    } catch (e) {
+      console.log(`[DB Profile] Supabase query catch block hit. Fallback to cache.`);
     }
   }
 }

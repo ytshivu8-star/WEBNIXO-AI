@@ -2,22 +2,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/payment/status",
-      "destination": "/api/payment/status.ts"
-    },
-    {
-      "source": "/api/payment/create-order",
-      "destination": "/api/payment/create-order.ts"
-    },
-    {
-      "source": "/api/payment/verify",
-      "destination": "/api/payment/verify.ts"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.ts"
-    },
-    {
       "source": "/((?!api/|assets/|static/|favicon.ico|_next/).*)",
       "destination": "/index.html"
     }
