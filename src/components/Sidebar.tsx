@@ -282,6 +282,50 @@ export default function Sidebar({
             </span>
           </div>
 
+          {/* Main Navigation Tabs */}
+          <div className={`px-3 pt-3 pb-1.5 flex flex-col gap-1 shrink-0 border-b ${
+            settings.theme === 'dark' ? 'border-white/5' : 'border-zinc-200/50'
+          }`}>
+            <button
+              onClick={() => {
+                if (activeChatId) {
+                  onSelectChat(activeChatId);
+                } else if (chats.length > 0) {
+                  onSelectChat(chats[0].id);
+                } else {
+                  onNewChat();
+                }
+              }}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-left cursor-pointer ${
+                window.location.hash !== '#/image-generator'
+                  ? settings.theme === 'dark' ? 'bg-white/5 text-white' : 'bg-black/5 text-zinc-900 font-extrabold'
+                  : settings.theme === 'dark' ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-600 hover:text-zinc-900 hover:bg-black/5'
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>AI Chat Workspace</span>
+            </button>
+
+            <button
+              onClick={() => {
+                window.location.hash = '/image-generator';
+              }}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all duration-150 text-left cursor-pointer ${
+                window.location.hash === '#/image-generator'
+                  ? settings.theme === 'dark' ? 'bg-white/5 text-white' : 'bg-black/5 text-zinc-900 font-extrabold'
+                  : settings.theme === 'dark' ? 'text-zinc-400 hover:text-white hover:bg-white/5' : 'text-zinc-600 hover:text-zinc-900 hover:bg-black/5'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Imagen Studio</span>
+              </div>
+              <span className="text-[8px] font-black tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+                Premium
+              </span>
+            </button>
+          </div>
+
           {/* Top Panel Actions */}
           <div className="p-3 flex items-center justify-between gap-2 border-b border-white/5 shrink-0">
             <button

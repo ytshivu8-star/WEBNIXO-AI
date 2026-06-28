@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { 
   Sparkles, 
+  Sparkle,
   Globe, 
   Terminal, 
   PenTool, 
@@ -106,14 +107,30 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
   };
 
   return (
-    <div className={`min-h-screen w-full flex flex-col justify-between overflow-y-auto ${
+    <div className={`min-h-screen w-full flex flex-col justify-between overflow-y-auto overflow-x-hidden ${
       settings.theme === 'dark' 
         ? 'bg-neutral-950 text-zinc-100 selection:bg-emerald-500/30' 
         : 'bg-zinc-50 text-zinc-800 selection:bg-emerald-500/20'
     }`}>
-      {/* Decorative Blur Blobs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative Blur Blobs and Grid */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02]" />
+        <motion.div 
+          animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-32 -left-32 w-96 h-96 md:w-[40vw] md:h-[40vw] bg-emerald-500/10 rounded-full blur-[4rem]" 
+        />
+        <motion.div 
+          animate={{ x: [0, -40, 0], y: [0, 50, 0] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          className="absolute top-1/3 -right-32 w-96 h-96 md:w-[35vw] md:h-[35vw] bg-violet-500/10 rounded-full blur-[4rem]" 
+        />
+        <motion.div 
+          animate={{ x: [0, 30, 0], y: [0, -40, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-32 left-1/4 w-96 h-96 md:w-[30vw] md:h-[30vw] bg-sky-500/10 rounded-full blur-[4rem]" 
+        />
+      </div>
       
       {/* Upper Navigation Bar */}
       <header className={`w-full py-4 px-6 md:px-12 flex items-center justify-between border-b backdrop-blur-md relative z-10 ${
@@ -168,7 +185,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
       </header>
 
       {/* Main Grid Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 md:py-16 flex flex-col items-center justify-center relative z-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-10 md:py-16 flex flex-col items-center justify-center relative z-10">
         
         {/* Left Side: Pitch and Visuals */}
         <motion.div 
@@ -177,22 +194,61 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
           transition={{ duration: 0.6 }}
           className="w-full max-w-4xl text-center space-y-8 flex flex-col items-center justify-center"
         >
-          <div className="space-y-4 flex flex-col items-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              <span>THE ULTIMATE AI FIESTA IS HERE</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black font-display tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-400 dark:from-white dark:via-zinc-100 dark:to-zinc-500">
-              Meet the Next Gen <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
+          <div className="space-y-6 flex flex-col items-center relative z-10">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10 backdrop-blur-md"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span className="tracking-widest uppercase">THE ULTIMATE AI FIESTA IS HERE</span>
+            </motion.div>
+            
+            <h1 className="text-5xl md:text-7xl font-black font-display tracking-tight leading-tight text-center drop-shadow-sm">
+              <span className="text-transparent bg-clip-text bg-gradient-to-br from-zinc-800 via-zinc-600 to-zinc-800 dark:from-white dark:via-zinc-200 dark:to-zinc-400">
+                Meet the Next Gen
+              </span>
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400 drop-shadow-md">
                 WEBNIXO AI Workspace
               </span>
             </h1>
-            <p className={`text-base md:text-lg max-w-xl leading-relaxed ${
+            
+            <p className={`text-base md:text-xl max-w-2xl leading-relaxed text-center font-medium ${
               settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'
             }`}>
-              A premium, elite workspace designed for multi-model workflows, live web-grounding intelligence, and seamless high-speed failovers. Sign up or try a demo at the top right to start.
+              A premium, elite workspace designed for multi-model workflows, live web-grounding intelligence, and seamless high-speed failovers.
             </p>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-col sm:flex-row items-center justify-center w-full sm:w-auto gap-4 pt-4 mb-4"
+            >
+              <button 
+                onClick={handleGoogleSignIn}
+                className="w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black uppercase tracking-wider text-sm bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <GoogleIcon className="w-5 h-5" />
+                )}
+                <span>Get Started Free</span>
+              </button>
+              <button 
+                onClick={() => onLogin('demo@webnixo.ai', 'Demo User')}
+                className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black uppercase tracking-wider text-sm border-2 transition-all hover:scale-105 active:scale-95 cursor-pointer flex justify-center items-center ${
+                  settings.theme === 'dark' 
+                    ? 'border-zinc-700 bg-zinc-800/50 text-white hover:bg-zinc-700' 
+                    : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
+                }`}
+              >
+                Try Live Demo
+              </button>
+            </motion.div>
           </div>
 
           {/* Model Showroom Row */}
@@ -319,14 +375,14 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
         </motion.div>
 
         {/* Why Choose WEBNIXO AI Section -> Replaced with beautifully animated Advantages & ROI section */}
-        <div className="col-span-1 lg:col-span-12 mt-12 md:mt-20 pt-12 md:pt-20 border-t border-zinc-500/10">
+        <div className="col-span-1 lg:col-span-12 mt-12 md:mt-20 pt-12 md:pt-20 border-t border-zinc-500/10 w-full">
           {/* Main Visual Campaign Banner: Get 8+ Premium AI Models for Half the Price of One */}
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className={`max-w-5xl mx-auto mb-16 p-8 md:p-12 rounded-3xl border relative overflow-hidden ${
+            className={`max-w-5xl mx-auto mb-16 p-4 sm:p-8 md:p-12 rounded-3xl border relative overflow-hidden ${
               settings.theme === 'dark' 
                 ? 'bg-radial from-emerald-500/10 via-zinc-900/40 to-black border-emerald-500/10 shadow-emerald-900/10 shadow-2xl' 
                 : 'bg-gradient-to-b from-emerald-50 to-white border-emerald-200/50 shadow-xl'
@@ -336,7 +392,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-400/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-violet-400/5 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
 
-            <div className="text-center space-y-4 max-w-4xl mx-auto relative z-10">
+            <div className="text-center space-y-4 w-full max-w-4xl mx-auto relative z-10">
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
@@ -347,14 +403,16 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                 <span>SUPERCHARGED UNIFIED AI LICENSE</span>
               </motion.div>
               
-              <h2 className="text-3xl md:text-6xl font-black tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-emerald-400 to-sky-400 leading-[1.1] md:leading-[1.15] max-w-3xl mx-auto text-balance">
-                Get 8+ Premium AI Models <br className="hidden md:inline" />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tight font-display leading-[1.2] md:leading-[1.15] max-w-3xl mx-auto break-words pb-2">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-emerald-400 to-sky-400 box-decoration-clone">
+                  Get 8+ Premium AI Models{' '}
+                </span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400 block sm:inline mt-1 sm:mt-0 box-decoration-clone">
                   for Half the Price of One!
                 </span>
               </h2>
               
-              <p className={`text-xs md:text-base leading-relaxed max-w-2xl mx-auto ${
+              <p className={`text-xs md:text-base leading-relaxed max-w-2xl mx-auto px-2 ${
                 settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-600'
               }`}>
                 Stop stacking redundant $20/month AI subscriptions. Webnixo bundles every elite model (GPT-4o, Claude 3.5 Sonnet, Perplexity, Grok, and more) into one single fluid interface with absolute lightning speeds.
@@ -385,7 +443,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   </h3>
                   
                   {/* Subscription Grid List */}
-                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                     {[
                       { name: "ChatGPT Plus", cost: "₹1,999", color: "bg-emerald-500/10 border-emerald-500/20" },
                       { name: "Claude Pro", cost: "₹1,999", color: "bg-orange-500/10 border-orange-500/20" },
@@ -509,15 +567,15 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             </div>
           </motion.div>
 
-          <div className="text-center space-y-3 max-w-3xl mx-auto mb-16">
+          <div className="text-center space-y-3 w-full max-w-3xl mx-auto mb-16">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">
               <Sparkles className="w-3 h-3 animate-spin text-amber-400" />
               <span>Interactive ROI Metrics</span>
             </div>
-            <h2 className="text-2xl md:text-5xl font-extrabold tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400 break-words leading-tight pb-2 box-decoration-clone">
               The Smart Way to Access Elite AI
             </h2>
-            <p className={`text-xs md:text-base leading-relaxed ${
+            <p className={`text-xs md:text-base leading-relaxed max-w-2xl mx-auto ${
               settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'
             }`}>
               Compare your costs interactively below and discover how much you stand to save with Webnixo AI.
@@ -525,7 +583,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
           </div>
 
           {/* Interactive Cost-Savings Calculator & Unified Superpowers Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-6xl mx-auto mb-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full max-w-6xl mx-auto mb-20">
             {/* ROI Cost Calculator (Left Column - Made slightly narrower to accommodate robust advantages) */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -855,28 +913,30 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative z-10">
             {/* Free Plan */}
             <motion.div 
-              whileHover={{ y: -6 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative ${
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative backdrop-blur-xl overflow-hidden group ${
                 settings.theme === 'dark'
-                  ? 'bg-neutral-900/40 border-white/5 hover:border-zinc-700'
-                  : 'bg-white border-zinc-200/80 hover:shadow-xl shadow-sm'
+                  ? 'bg-zinc-900/60 border-white/10 hover:border-zinc-500 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)]'
+                  : 'bg-white/80 border-zinc-200 hover:border-zinc-300 hover:shadow-2xl shadow-sm'
               }`}
             >
-              <div className="space-y-5">
-                <h3 className="text-lg font-bold">Standard Pass</h3>
-                <p className={`text-xs leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              {/* Card background effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="space-y-5 relative z-10">
+                <h3 className="text-2xl font-black tracking-tight">Standard Pass</h3>
+                <p className={`text-xs font-medium leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   Great for basic questions and everyday brainstorming.
                 </p>
                 <div className="pt-2">
-                  <span className="text-3xl font-extrabold font-display">₹0</span>
-                  <span className="text-xs opacity-60"> / forever</span>
+                  <span className="text-4xl font-black text-zinc-400 font-display drop-shadow-sm">₹0</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / forever</span>
                 </div>
-                <hr className={`border-t ${settings.theme === 'dark' ? 'border-white/5' : 'border-zinc-100'}`} />
-                <ul className="space-y-3 pt-2 text-xs">
+                <hr className={`border-t ${settings.theme === 'dark' ? 'border-white/10' : 'border-zinc-200'}`} />
+                <ul className="space-y-3 pt-2 text-xs font-medium">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                     <span>Webnixo 1.0 (Flash) access</span>
@@ -897,40 +957,44 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               </div>
               <button 
                 onClick={() => onLogin('demo@webnixo.ai', 'Demo User')}
-                className={`w-full py-3 mt-8 rounded-xl font-bold text-xs transition-all duration-300 cursor-pointer text-center uppercase tracking-wider ${
+                className={`w-full py-3.5 mt-8 rounded-xl font-black text-xs transition-all duration-300 cursor-pointer text-center uppercase tracking-wider relative z-10 overflow-hidden group/btn ${
                   settings.theme === 'dark'
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-white'
-                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
+                    ? 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200'
                 }`}
               >
-                Join Free Now
+                <span className="relative z-10">Join Free Now</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" />
               </button>
             </motion.div>
 
             {/* Pro Monthly Plan */}
             <motion.div 
-              whileHover={{ y: -6 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative ${
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative backdrop-blur-xl overflow-hidden group ${
                 settings.theme === 'dark'
-                  ? 'bg-gradient-to-b from-emerald-500/5 to-neutral-900/60 border-emerald-500/20 hover:border-emerald-500/40'
-                  : 'bg-gradient-to-b from-emerald-50/10 to-white border-emerald-500/20 hover:shadow-xl shadow-sm'
+                  ? 'bg-emerald-950/40 border-emerald-500/30 hover:border-emerald-400 hover:shadow-[0_0_40px_rgba(16,185,129,0.15)]'
+                  : 'bg-gradient-to-b from-emerald-50/80 to-white/80 border-emerald-500/30 hover:shadow-2xl shadow-sm hover:border-emerald-400'
               }`}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider shadow-md">
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-[2rem] -z-10 rounded-full group-hover:bg-emerald-500/30 transition-all duration-500" />
+              <div className="absolute top-0 right-0 bg-gradient-to-bl from-emerald-500 to-emerald-400 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-bl-xl shadow-lg z-10 flex items-center gap-1.5 border-b border-l border-emerald-400/30">
+                <Sparkles className="w-3.5 h-3.5 animate-pulse" />
                 Most Popular
               </div>
-              <div className="space-y-5">
-                <h3 className="text-lg font-bold">Monthly Pass</h3>
-                <p className={`text-xs leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              <div className="space-y-5 relative z-10">
+                <h3 className="text-2xl font-black tracking-tight">Monthly Pass</h3>
+                <p className={`text-xs font-medium leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   Unlock all premium AI brains month-by-month. Cancel anytime.
                 </p>
                 <div className="pt-2">
-                  <span className="text-3xl font-extrabold text-emerald-400 font-display">₹49</span>
-                  <span className="text-xs opacity-60"> / month</span>
+                  <span className="text-4xl font-black text-emerald-400 font-display drop-shadow-sm">₹49</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / mo</span>
                 </div>
-                <hr className={`border-t ${settings.theme === 'dark' ? 'border-white/5' : 'border-zinc-100'}`} />
-                <ul className="space-y-3 pt-2 text-xs">
+                <hr className={`border-t ${settings.theme === 'dark' ? 'border-emerald-500/20' : 'border-emerald-500/10'}`} />
+                <ul className="space-y-3 pt-2 text-xs font-medium">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                     <span>GPT-4o & Claude 3.5 Sonnet</span>
@@ -951,7 +1015,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               </div>
               <button 
                 onClick={handleGoogleSignIn}
-                className="w-full py-3 mt-8 rounded-xl font-bold text-xs uppercase tracking-wider bg-emerald-500 hover:bg-emerald-400 text-white transition-all duration-300 shadow-md cursor-pointer text-center"
+                className="w-full py-3 mt-8 rounded-xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-white transition-all duration-300 shadow-lg shadow-emerald-500/20 cursor-pointer text-center relative z-10"
               >
                 Sign In & Upgrade
               </button>
@@ -959,28 +1023,31 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
 
             {/* Pro Yearly Plan */}
             <motion.div 
-              whileHover={{ y: -6 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative ${
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`p-8 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative backdrop-blur-xl overflow-hidden group ${
                 settings.theme === 'dark'
-                  ? 'bg-gradient-to-b from-sky-500/5 to-neutral-900/60 border-sky-500/20 hover:border-sky-500/40'
-                  : 'bg-gradient-to-b from-sky-50/10 to-white border-sky-500/20 hover:shadow-xl shadow-sm'
+                  ? 'bg-sky-950/40 border-sky-500/30 hover:border-sky-400 hover:shadow-[0_0_40px_rgba(14,165,233,0.15)]'
+                  : 'bg-gradient-to-b from-sky-50/80 to-white/80 border-sky-500/30 hover:shadow-2xl shadow-sm hover:border-sky-400'
               }`}
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider shadow-md">
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/20 blur-[2rem] -z-10 rounded-full group-hover:bg-sky-500/30 transition-all duration-500" />
+              <div className="absolute top-0 right-0 bg-gradient-to-bl from-sky-500 to-sky-400 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-bl-xl shadow-lg z-10 flex items-center gap-1.5 border-b border-l border-sky-400/30">
+                <Sparkle className="w-3.5 h-3.5 animate-pulse" />
                 Best Value (Save 15%)
               </div>
-              <div className="space-y-5">
-                <h3 className="text-lg font-bold">Yearly Elite</h3>
-                <p className={`text-xs leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              <div className="space-y-5 relative z-10">
+                <h3 className="text-2xl font-black tracking-tight">Yearly Elite</h3>
+                <p className={`text-xs font-medium leading-relaxed ${settings.theme === 'dark' ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   Ultimate non-stop premium access. Locked-in discount.
                 </p>
                 <div className="pt-2">
-                  <span className="text-3xl font-extrabold text-sky-400 font-display">₹499</span>
-                  <span className="text-xs opacity-60"> / year</span>
+                  <span className="text-4xl font-black text-sky-400 font-display drop-shadow-sm">₹499</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-60"> / yr</span>
                 </div>
-                <hr className={`border-t ${settings.theme === 'dark' ? 'border-white/5' : 'border-zinc-100'}`} />
-                <ul className="space-y-3 pt-2 text-xs">
+                <hr className={`border-t ${settings.theme === 'dark' ? 'border-sky-500/20' : 'border-sky-500/10'}`} />
+                <ul className="space-y-3 pt-2 text-xs font-medium">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
                     <span>All Monthly premium features</span>
@@ -1001,7 +1068,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
               </div>
               <button 
                 onClick={handleGoogleSignIn}
-                className="w-full py-3 mt-8 rounded-xl font-bold text-xs uppercase tracking-wider bg-sky-500 hover:bg-sky-400 text-white transition-all duration-300 shadow-md cursor-pointer text-center"
+                className="w-full py-3 mt-8 rounded-xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white transition-all duration-300 shadow-lg shadow-sky-500/20 cursor-pointer text-center relative z-10"
               >
                 Sign In & Get Elite
               </button>
@@ -1011,14 +1078,14 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
 
         {/* Dedicated FAQ Section on Main Page */}
         <div className="col-span-1 lg:col-span-12 mt-16 md:mt-24 pt-16 border-t border-zinc-500/10 w-full max-w-4xl mx-auto">
-          <div className="text-center space-y-3 mb-10">
+          <div className="text-center space-y-3 mb-10 w-full">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
               <span>ANSWERS &amp; HELP</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight font-display text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400 break-words leading-tight pb-2 box-decoration-clone">
               Frequently Asked Questions (FAQ)
             </h2>
-            <p className={`text-xs md:text-sm leading-relaxed ${
+            <p className={`text-xs md:text-sm leading-relaxed max-w-2xl mx-auto px-2 ${
               settings.theme === 'dark' ? 'text-zinc-400' : 'text-zinc-500'
             }`}>
               Quick answers to help you understand our secure gateway, elite routing models, and payment channels.

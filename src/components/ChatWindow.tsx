@@ -34,7 +34,7 @@ import {
   Activity,
   Lock
 } from 'lucide-react';
-import { ChatSession, Message, MODELS, ModelOption, AppSettings } from '../types';
+import { ChatSession, Message, MODELS, ModelOption, AppSettings, Attachment } from '../types';
 
 export function WebnixoLogo({ className = "w-8 h-8" }: { className?: string }) {
   return (
@@ -198,7 +198,7 @@ export function renderModelLogo(modelId: string, className: string = "w-5 h-5") 
 
 interface ChatWindowProps {
   activeSession: ChatSession | null;
-  onSendMessage: (text: string, searchGrounding: boolean) => void;
+  onSendMessage: (text: string, searchGrounding: boolean, attachments?: Attachment[]) => void;
   onRegenerateMessage: () => void;
   isLoading: boolean;
   onToggleSidebar: () => void;
@@ -240,19 +240,29 @@ export default function ChatWindow({
   userPlan,
 }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<string | null>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [localSearchGrounding, setLocalSearchGrounding] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync with activeSession searchGrounding when session changes
+  useEffect(() => {
+    if (activeSession) {
+      setLocalSearchGrounding(activeSession.searchGrounding);
+    } else {
+      setLocalSearchGrounding(false);
+    }
+  }, [activeSession?.id, activeSession?.searchGrounding]);
+
   const activeModel = MODELS.find(m => m.id === (activeSession?.model || 'gemini-3.5-flash')) || MODELS[0];
-  const isSearchGroundingActive = activeSession?.searchGrounding ?? false;
 
   const handleModelChangeSecure = (modelId: string) => {
     const plan = userPlan || 'free';
@@ -320,9 +330,10 @@ export default function ChatWindow({
   };
 
   const handleSend = () => {
-    if (!inputValue.trim() || isLoading) return;
-    onSendMessage(inputValue.trim(), isSearchGroundingActive);
+    if ((!inputValue.trim() && attachments.length === 0) || isLoading) return;
+    onSendMessage(inputValue.trim(), localSearchGrounding, attachments);
     setInputValue('');
+    setAttachments([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -372,11 +383,36 @@ export default function ChatWindow({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Create a nice styled upload mock text
-      setInputValue(prev => prev + `[Uploaded File: ${file.name}] `);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target?.result as string;
+        if (!base64String) return;
+        const commaIndex = base64String.indexOf(',');
+        const base64Data = commaIndex !== -1 ? base64String.substring(commaIndex + 1) : base64String;
+        
+        const newAttachment: Attachment = {
+          name: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          size: file.size,
+          base64: base64Data
+        };
+        
+        setAttachments(prev => [...prev, newAttachment]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    if (e.target) {
+      e.target.value = '';
     }
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   // Custom code renderer for ReactMarkdown
@@ -438,6 +474,7 @@ export default function ChatWindow({
       <input 
         id="hidden-file-input"
         type="file" 
+        multiple
         ref={fileInputRef} 
         onChange={handleFileChange} 
         className="hidden" 
@@ -741,7 +778,43 @@ export default function ChatWindow({
                       : ''
                   }`}>
                     {msg.role === 'user' ? (
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      <div className="space-y-2">
+                        {msg.content && <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>}
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {msg.attachments.map((att, idx) => {
+                              const isImage = att.mimeType.startsWith('image/');
+                              return (
+                                <div 
+                                  key={idx}
+                                  className={`flex items-center gap-1.5 p-1 pr-2 rounded-lg border text-[11px] ${
+                                    settings.theme === 'dark' 
+                                      ? 'bg-zinc-950/80 border-white/5 text-zinc-300' 
+                                      : 'bg-white border-zinc-200 text-zinc-700 shadow-3xs'
+                                  }`}
+                                >
+                                  {isImage ? (
+                                    <div className="w-5 h-5 rounded-md overflow-hidden bg-zinc-800 shrink-0">
+                                      {att.base64 ? (
+                                        <img 
+                                          src={`data:${att.mimeType};base64,${att.base64}`} 
+                                          alt={att.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-[8px] bg-zinc-700">IMG</div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <FileText className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                  )}
+                                  <span className="truncate max-w-[120px] font-medium" title={att.name}>{att.name}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     ) : msg.compares ? (
                       (() => {
                         return (
@@ -913,7 +986,7 @@ export default function ChatWindow({
                   <WebnixoLogo className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div className="flex flex-col space-y-2">
-                  {isSearchGroundingActive && (
+                  {localSearchGrounding && (
                     <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium bg-emerald-500/5 px-3 py-1.5 rounded-xl border border-emerald-500/10 select-none animate-pulse">
                       <Globe className="w-3.5 h-3.5 animate-spin" />
                       <span>Searching the web...</span>
@@ -939,6 +1012,60 @@ export default function ChatWindow({
             ? 'bg-white/5 border-white/15 backdrop-blur-2xl focus-within:ring-emerald-500/20 focus-within:border-white/30'
             : 'bg-black/5 border-black/10 backdrop-blur-xl focus-within:ring-emerald-500/20 focus-within:border-black/20 focus-within:bg-white/90'
         }`}>
+          {/* Selected Attachments Preview */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-4 pt-3 pb-1.5 max-h-36 overflow-y-auto border-b border-zinc-700/10 dark:border-white/5">
+              {attachments.map((att, idx) => {
+                const isImage = att.mimeType.startsWith('image/');
+                const sizeInKb = att.size ? `${(att.size / 1024).toFixed(1)} KB` : '';
+                
+                return (
+                  <div 
+                    key={idx}
+                    className={`flex items-center gap-2 p-1.5 pr-2.5 rounded-xl border text-xs relative group ${
+                      settings.theme === 'dark' 
+                        ? 'bg-zinc-900/80 border-white/10 text-zinc-300' 
+                        : 'bg-white border-zinc-200 text-zinc-700 shadow-2xs'
+                    }`}
+                  >
+                    {isImage ? (
+                      <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-800 shrink-0">
+                        <img 
+                          src={`data:${att.mimeType};base64,${att.base64}`} 
+                          alt={att.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        settings.theme === 'dark' ? 'bg-zinc-800 text-emerald-400' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        <FileText className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0 max-w-[150px]">
+                      <span className="truncate font-medium">{att.name}</span>
+                      {sizeInKb && <span className="text-[10px] opacity-60 font-mono">{sizeInKb}</span>}
+                    </div>
+                    
+                    {/* Delete overlay button */}
+                    <button
+                      onClick={() => handleRemoveAttachment(idx)}
+                      className={`ml-1.5 p-1 rounded-full hover:scale-110 transition-transform ${
+                        settings.theme === 'dark' 
+                          ? 'hover:bg-zinc-800 text-zinc-400 hover:text-red-400' 
+                          : 'hover:bg-zinc-100 text-zinc-500 hover:text-red-600'
+                      }`}
+                      title="Remove attachment"
+                    >
+                      <span className="text-sm font-bold leading-none">×</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Textarea */}
           <textarea
             id="chat-textarea-input"
@@ -970,9 +1097,13 @@ export default function ChatWindow({
 
               <button
                 id="web-search-grounding-toggle-btn"
-                onClick={() => onChangeSearchGrounding(!isSearchGroundingActive)}
+                onClick={() => {
+                  const nextVal = !localSearchGrounding;
+                  setLocalSearchGrounding(nextVal);
+                  onChangeSearchGrounding(nextVal);
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all text-xs font-semibold border ${
-                  isSearchGroundingActive
+                  localSearchGrounding
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15'
                     : settings.theme === 'dark'
                       ? 'bg-transparent border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300'
@@ -980,7 +1111,7 @@ export default function ChatWindow({
                 }`}
                 title="Toggle Web Search Grounding (Gemini)"
               >
-                <Globe className={`w-3.5 h-3.5 ${isSearchGroundingActive ? 'text-emerald-400' : 'opacity-65'}`} />
+                <Globe className={`w-3.5 h-3.5 ${localSearchGrounding ? 'text-emerald-400' : 'opacity-65'}`} />
                 <span>Search</span>
               </button>
 
@@ -1008,9 +1139,9 @@ export default function ChatWindow({
             <button
               id="send-prompt-btn"
               onClick={handleSend}
-              disabled={!inputValue.trim() || isLoading}
+              disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
               className={`p-2 rounded-full transition-all ${
-                inputValue.trim() && !isLoading
+                (inputValue.trim() || attachments.length > 0) && !isLoading
                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md transform scale-100 active:scale-95'
                   : settings.theme === 'dark'
                     ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'

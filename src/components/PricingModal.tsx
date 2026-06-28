@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift, Database, Plus, RefreshCw, Calendar, Sparkle } from 'lucide-react';
+import { X, Sparkles, Check, Zap, Loader2, ShieldCheck, CreditCard, Tag, Gift, Database, Plus, RefreshCw, Calendar, Sparkle, ChevronLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 interface PricingModalProps {
@@ -512,7 +512,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
   const isDark = theme === 'dark';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start justify-center p-4 md:p-6 bg-black/60 backdrop-blur-xs">
       {/* Self-contained high-fidelity hardware-accelerated confetti and bounce animations */}
       <style>{`
         @keyframes fall {
@@ -537,18 +537,25 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         }
       `}</style>
 
-      {/* Backdrop */}
+      {/* Backdrop clickable zone */}
       <div 
         onClick={onClose}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+        className="fixed inset-0 bg-transparent transition-opacity" 
       />
 
       {/* Modal Container */}
-      <div className={`relative w-full max-w-3xl p-6 md:p-8 rounded-3xl border shadow-2xl transition-all scale-100 z-50 my-8 overflow-hidden ${
+      <div className={`relative w-full max-w-3xl p-5 md:p-8 mt-6 mb-12 md:my-8 rounded-[2rem] border shadow-2xl transition-all scale-100 z-10 overflow-hidden ${
         isDark 
-          ? 'bg-[#1a1a1a] border-zinc-800 text-zinc-100' 
+          ? 'bg-[#121212] border-white/10 text-zinc-100' 
           : 'bg-white border-zinc-200 text-zinc-900'
       }`}>
+        
+        {/* Decorative Internal Blobs */}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden z-0">
+          <div className="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-[3rem]" />
+          <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-violet-500/10 rounded-full blur-[3rem]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
+        </div>
         
         {/* Satisfying Confetti Sprinkles on Successful Coupon Application */}
         {showConfetti && (
@@ -585,24 +592,25 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           className={`absolute top-4 right-4 p-1.5 rounded-full hover:opacity-80 transition-opacity z-10 ${
             isDark ? 'bg-zinc-800 text-zinc-400 hover:text-white' : 'bg-zinc-100 text-zinc-500 hover:text-zinc-900'
           }`}
+          title="Close modal"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Title */}
-        <div className="text-center space-y-2 mb-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <div className="text-center space-y-3 mb-6 relative z-10">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
             <span>WEBNIXO CREDIT PLANS</span>
           </div>
-          <h3 className="text-2xl font-black tracking-tight">Select Your Premium Power</h3>
-          <p className={`text-xs max-w-md mx-auto ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+          <h3 className="text-xl md:text-3xl font-black tracking-tight leading-tight">Select Your Premium Power</h3>
+          <p className={`text-xs md:text-sm max-w-md mx-auto ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
             Supercharge your workflows with modular API routing credits. Select a plan below.
           </p>
         </div>
 
         {/* Selector Toggle & Coupon Code Row */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-5 items-center relative z-10">
           
           {/* Selector Toggle */}
           <div className="col-span-1 md:col-span-5 flex justify-center">
@@ -701,187 +709,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
           </div>
         )}
 
-        {/* Dynamic Database Coupon Suggestions */}
-        {!appliedCoupon && dbCoupons.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4 text-[10px]">
-            <span className="text-zinc-500 font-medium">👉 Active Coupons:</span>
-            {dbCoupons.slice(0, 3).map((c: any) => (
-              <button
-                key={c.code}
-                onClick={() => { setCouponInput(c.code); setTimeout(handleApplyCoupon, 100); }}
-                className={`px-2 py-0.5 rounded-full font-bold border transition-all cursor-pointer ${
-                  isDark ? 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-emerald-400 hover:border-emerald-400' : 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-emerald-600 hover:border-emerald-300'
-                }`}
-              >
-                {c.code} ({c.discount_percent || c.discountPercent || 20}% Off)
-              </button>
-            ))}
-          </div>
-        )}
 
-        {/* Toggle Database Control Center Button */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={() => setShowDatabasePanel(!showDatabasePanel)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
-              showDatabasePanel
-                ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-md shadow-amber-500/5'
-                : isDark
-                  ? 'bg-zinc-900 border-zinc-800 hover:border-amber-500/30 text-zinc-400 hover:text-amber-400'
-                  : 'bg-zinc-100 border-zinc-200 hover:border-amber-500/30 text-zinc-600 hover:text-amber-600'
-            }`}
-          >
-            <Database className="w-3.5 h-3.5 shrink-0" />
-            <span>{showDatabasePanel ? 'Hide Coupon Database Center 📊' : 'Manage Affiliate & Coupon Database Center 📊'}</span>
-          </button>
-        </div>
-
-        {/* Database Control Center Panel */}
-        {showDatabasePanel && (
-          <div className={`p-4 mb-6 rounded-2xl border animate-[popIn_0.25s_ease-out] ${
-            isDark ? 'bg-zinc-950/85 border-amber-500/20' : 'bg-amber-50/40 border-amber-500/20 shadow-inner'
-          }`}>
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <Database className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold tracking-tight">Affiliate Dynamic Database Hub</h3>
-              </div>
-              <button
-                onClick={() => { fetchCouponsFromDB(); fetchCouponUsagesFromDB(); }}
-                className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer"
-                title="Refresh database records"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${(isFetchingCoupons || isFetchingLogs) ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {/* Part 1: Add Coupon Form */}
-            <form onSubmit={handleCreateCouponInDB} className="space-y-3 mb-6 bg-zinc-900/40 p-3 rounded-xl border border-zinc-800/40">
-              <h4 className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                <Plus className="w-3 h-3" />
-                Add & Link New Coupon to Database
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Coupon Code</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. EXTRA50"
-                    value={newCouponCode}
-                    onChange={(e) => setNewCouponCode(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Discount Percent (%)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="99"
-                    value={newCouponPercent}
-                    onChange={(e) => setNewCouponPercent(Number(e.target.value))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-zinc-400 mb-1">Description / Campaign</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Affiliate partner launch promo"
-                    value={newCouponDescription}
-                    onChange={(e) => setNewCouponDescription(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {createCouponMsg && <p className="text-[10px] text-emerald-400 font-semibold">{createCouponMsg}</p>}
-              {createCouponError && <p className="text-[10px] text-red-400 font-semibold">{createCouponError}</p>}
-
-              <div className="flex justify-end pt-1">
-                <button
-                  type="submit"
-                  disabled={isCreatingCoupon}
-                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 text-black font-extrabold text-[10px] uppercase tracking-wider px-4 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  {isCreatingCoupon ? 'Saving...' : 'Save to Database'}
-                </button>
-              </div>
-            </form>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              {/* Part 2: Active Coupons List */}
-              <div className="lg:col-span-5 space-y-2">
-                <h4 className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
-                  <Tag className="w-3 h-3 text-amber-400" />
-                  Active Database Coupons ({dbCoupons.length})
-                </h4>
-                <div className="max-h-48 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-zinc-900/60 text-[9px] text-zinc-400 border-b border-zinc-850">
-                        <th className="p-2 font-bold">Code</th>
-                        <th className="p-2 font-bold text-center">Discount</th>
-                        <th className="p-2 font-bold">Campaign Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-[10px] divide-y divide-zinc-900">
-                      {dbCoupons.length === 0 ? (
-                        <tr>
-                          <td colSpan={3} className="p-3 text-center text-zinc-500 italic">No coupons registered yet</td>
-                        </tr>
-                      ) : (
-                        dbCoupons.map((c: any) => (
-                          <tr key={c.code} className="hover:bg-zinc-900/40">
-                            <td className="p-2 font-mono font-bold text-amber-400">{c.code}</td>
-                            <td className="p-2 font-black text-center text-emerald-400">{c.discount_percent}%</td>
-                            <td className="p-2 text-zinc-400 truncate max-w-[120px]" title={c.description}>{c.description}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Part 3: Coupon Application Usages Logs */}
-              <div className="lg:col-span-7 space-y-2">
-                <h4 className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-amber-400" />
-                  Real-time Application Usages Log ({couponUsages.length})
-                </h4>
-                <div className="max-h-48 overflow-y-auto border border-zinc-800/80 rounded-xl bg-zinc-950">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-zinc-900/60 text-[9px] text-zinc-400 border-b border-zinc-850">
-                        <th className="p-2 font-bold">User Email</th>
-                        <th className="p-2 font-bold">Code</th>
-                        <th className="p-2 font-bold text-right">Plan</th>
-                        <th className="p-2 font-bold text-right">Price paid</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-[9px] font-medium divide-y divide-zinc-900">
-                      {couponUsages.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="p-3 text-center text-zinc-500 italic">No usage records written to database</td>
-                        </tr>
-                      ) : (
-                        couponUsages.map((u: any) => (
-                          <tr key={u.id} className="hover:bg-zinc-900/40">
-                            <td className="p-2 font-semibold text-zinc-300 truncate max-w-[110px]" title={u.email}>{u.email}</td>
-                            <td className="p-2 font-mono font-bold text-emerald-400">{u.coupon_code}</td>
-                            <td className="p-2 text-right text-zinc-400 uppercase tracking-wider">{u.plan_id.replace('_', ' ')}</td>
-                            <td className="p-2 text-right font-black text-white">₹{u.discounted_price}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Error Alert */}
         {error && (
@@ -891,13 +719,14 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         )}
 
         {/* Two Plan Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6 relative z-10">
           {/* STARTER CARD */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
+          <div className={`p-6 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative overflow-hidden backdrop-blur-xl hover:-translate-y-1 group ${
             isDark 
-              ? 'bg-neutral-900/40 border-white/5 hover:border-emerald-500/20' 
-              : 'bg-zinc-50 border-zinc-200 hover:shadow-lg'
+              ? 'bg-zinc-900/60 border-white/10 hover:border-emerald-500/30 hover:shadow-[0_0_40px_rgba(255,255,255,0.05)]' 
+              : 'bg-white/80 border-zinc-200 hover:border-emerald-500/30 hover:shadow-xl'
           }`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             {appliedCoupon && (
               <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm">
                 -{appliedCoupon.discountPercent}% OFF
@@ -906,14 +735,14 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
             
             <div className="space-y-4">
               <div className="space-y-1">
-                <h4 className="text-base font-black tracking-tight">{plans.starter.name}</h4>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <h4 className="text-xl font-black tracking-tight">{plans.starter.name}</h4>
+                <p className={`text-[11px] leading-relaxed font-medium ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   {plans.starter.description}
                 </p>
               </div>
 
               <div className="pt-2">
-                <div className="text-3xl font-black text-emerald-400 flex items-baseline flex-wrap gap-1.5">
+                <div className="text-4xl font-black text-emerald-400 flex items-baseline flex-wrap gap-1.5 drop-shadow-sm">
                   {appliedCoupon ? (
                     <>
                       <span className="text-zinc-500 line-through text-lg font-bold">
@@ -928,7 +757,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
                       ₹{billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price}
                     </span>
                   )}
-                  <span className="text-xs font-normal text-zinc-500"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
+                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest"> / {billingInterval === 'monthly' ? 'mo' : 'yr'}</span>
                 </div>
                 
                 {appliedCoupon && (
@@ -977,51 +806,59 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
                 getDiscountedPrice(billingInterval === 'monthly' ? plans.starter.monthly.price : plans.starter.yearly.price)
               )}
               disabled={isProcessing !== null}
-              className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`w-full py-3 mt-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer relative overflow-hidden group/btn ${
                 isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id)
                   ? 'bg-zinc-600 text-white'
                   : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/10'
               }`}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" />
               {isProcessing === (billingInterval === 'monthly' ? plans.starter.monthly.id : plans.starter.yearly.id) ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Connecting...</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin relative z-10" />
+                  <span className="relative z-10">Connecting...</span>
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Get Starter Pass</span>
+                  <CreditCard className="w-3.5 h-3.5 relative z-10" />
+                  <span className="relative z-10">Get Starter Pass</span>
                 </>
               )}
             </button>
           </div>
 
           {/* PRO CARD */}
-          <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all relative overflow-hidden ${
+          <div className={`p-6 rounded-3xl border flex flex-col justify-between transition-all duration-300 relative overflow-hidden backdrop-blur-xl hover:-translate-y-1 group ${
             isDark 
-              ? 'bg-neutral-900/70 border-sky-500/20 hover:border-sky-500/40' 
-              : 'bg-sky-50/10 border-sky-500/20 hover:shadow-lg'
+              ? 'bg-sky-950/40 border-sky-500/30 hover:border-sky-400 hover:shadow-[0_0_40px_rgba(14,165,233,0.15)]' 
+              : 'bg-gradient-to-b from-sky-50/80 to-white/80 border-sky-500/30 hover:border-sky-400 hover:shadow-xl'
           }`}>
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 blur-[2rem] -z-10 rounded-full group-hover:bg-sky-500/20 transition-all duration-500" />
+            
             {appliedCoupon && (
               <div className="absolute top-0 right-0 bg-sky-500 text-black text-[7px] font-black uppercase px-2 py-0.5 rounded-bl-lg shadow-sm z-10">
                 -{appliedCoupon.discountPercent}% OFF
               </div>
             )}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[8px] font-black uppercase px-2.5 py-1 rounded-full tracking-wider shadow-md">
-              Most Popular / Ultimate
-            </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 relative z-10">
+              <div className="flex justify-start mt-1 mb-2">
+                <span className="bg-gradient-to-r from-sky-500 to-sky-400 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-full tracking-wider shadow-lg shadow-sky-500/20 flex items-center gap-1.5">
+                  <Sparkle className="w-3.5 h-3.5 text-white animate-pulse" />
+                  <span>Most Popular / Ultimate</span>
+                </span>
+              </div>
+
               <div className="space-y-1">
-                <h4 className="text-base font-black tracking-tight">{plans.pro.name}</h4>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <h4 className="text-xl font-black tracking-tight">{plans.pro.name}</h4>
+                <p className={`text-[11px] leading-relaxed font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-600'}`}>
                   {plans.pro.description}
                 </p>
               </div>
 
               <div className="pt-2">
-                <div className="text-3xl font-black text-sky-400 flex items-baseline flex-wrap gap-1.5">
+                <div className="text-4xl font-black text-sky-400 flex items-baseline flex-wrap gap-1.5 drop-shadow-sm">
                   {appliedCoupon ? (
                     <>
                       <span className="text-zinc-500 line-through text-lg font-bold">
@@ -1036,7 +873,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
                       ₹{billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price}
                     </span>
                   )}
-                  <span className="text-xs font-normal text-zinc-500"> / {billingInterval === 'monthly' ? 'month' : 'year'}</span>
+                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest"> / {billingInterval === 'monthly' ? 'mo' : 'yr'}</span>
                 </div>
 
                 {appliedCoupon && (
@@ -1085,21 +922,22 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
                 getDiscountedPrice(billingInterval === 'monthly' ? plans.pro.monthly.price : plans.pro.yearly.price)
               )}
               disabled={isProcessing !== null}
-              className={`w-full py-2.5 mt-6 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`w-full py-3 mt-6 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer relative overflow-hidden group/btn ${
                 isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id)
                   ? 'bg-zinc-600 text-white'
-                  : 'bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/10'
+                  : 'bg-gradient-to-r from-sky-500 to-sky-400 hover:from-sky-400 hover:to-sky-300 text-white shadow-lg shadow-sky-500/20'
               }`}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" />
               {isProcessing === (billingInterval === 'monthly' ? plans.pro.monthly.id : plans.pro.yearly.id) ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Connecting...</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin relative z-10" />
+                  <span className="relative z-10">Connecting...</span>
                 </>
               ) : (
                 <>
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Get Pro Elite Pass</span>
+                  <CreditCard className="w-3.5 h-3.5 relative z-10" />
+                  <span className="relative z-10">Get Pro Elite Pass</span>
                 </>
               )}
             </button>
@@ -1107,7 +945,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         </div>
 
         {/* Legal Consent & Refund warning */}
-        <div className={`text-center text-[10px] leading-relaxed mb-4 font-medium px-2 ${
+        <div className={`text-center text-[10px] leading-relaxed mb-4 font-medium px-2 relative z-10 ${
           isDark ? 'text-zinc-400' : 'text-zinc-500'
         }`}>
           By proceeding, you agree to our{' '}
@@ -1129,7 +967,7 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         </div>
 
         {/* Secure badge footer */}
-        <div className="flex items-center gap-2 justify-center pt-4 mt-4 border-t border-zinc-500/10 text-[10px] opacity-50">
+        <div className="flex items-center gap-2 justify-center pt-4 mt-4 border-t border-zinc-500/10 text-[10px] opacity-50 relative z-10">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>Secured by Cashfree Payments India. PCI-DSS Certified.</span>
         </div>

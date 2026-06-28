@@ -8,6 +8,13 @@ export interface SearchSource {
   url: string;
 }
 
+export interface Attachment {
+  name: string;
+  mimeType: string;
+  size?: number;
+  base64?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -16,6 +23,7 @@ export interface Message {
   sources?: SearchSource[];
   queries?: string[];
   isError?: boolean;
+  attachments?: Attachment[];
   compares?: Record<string, {
     modelName: string;
     content: string;

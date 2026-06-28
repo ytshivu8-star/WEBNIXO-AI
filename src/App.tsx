@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ChatSession, Message, MODELS, AppSettings } from './types';
+import { ChatSession, Message, MODELS, AppSettings, Attachment } from './types';
 
 export const MODEL_CREDIT_COSTS: Record<string, number> = {
   'gemini-3.5-flash': 1,
@@ -19,6 +19,7 @@ export const MODEL_CREDIT_COSTS: Record<string, number> = {
 };
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
+import ImageGeneratorWindow from './components/ImageGeneratorWindow';
 import SettingsDialog from './components/SettingsDialog';
 import LandingPage from './components/LandingPage';
 import PaymentVerificationPage from './components/PaymentVerificationPage';
@@ -68,7 +69,13 @@ export default function App() {
     };
   }, []);
 
+  const [previousPath, setPreviousPath] = useState<string>('/');
+
   const navigate = (path: string) => {
+    const fromPath = getRoutePath();
+    if (fromPath !== '/pricing' && fromPath !== '/settings' && !fromPath.startsWith('/auth/callback')) {
+      setPreviousPath(fromPath);
+    }
     // Always use hash routing with the full path (including dynamic IDs)
     window.location.hash = path;
     setCurrentPath(path);
@@ -77,7 +84,9 @@ export default function App() {
   const settingsIsOpen = currentPath === '/settings';
 
   const handleCloseModal = () => {
-    if (activeChatId) {
+    if (previousPath && previousPath !== '/pricing' && previousPath !== '/settings') {
+      navigate(previousPath);
+    } else if (activeChatId) {
       navigate(`/chat/${activeChatId}`);
     } else {
       navigate('/');
@@ -594,7 +603,7 @@ export default function App() {
     saveChats(updated);
   };
 
-  const handleSendMessage = async (text: string, searchGrounding: boolean) => {
+  const handleSendMessage = async (text: string, searchGrounding: boolean, attachments?: Attachment[]) => {
     let currentSession = getActiveSession();
     let sessionId = activeChatId;
 
@@ -644,6 +653,7 @@ export default function App() {
       id: `msg-${Date.now()}-user`,
       role: 'user',
       content: text,
+      attachments: attachments,
       timestamp: new Date().toISOString()
     };
 
@@ -718,7 +728,8 @@ export default function App() {
                   message: text,
                   history: currentSession!.messages,
                   model: m,
-                  searchGrounding: searchGrounding
+                  searchGrounding: searchGrounding,
+                  attachments: attachments
                 })
               });
 
@@ -794,7 +805,8 @@ export default function App() {
           message: text,
           history: currentSession.messages,
           model: currentSession.model,
-          searchGrounding: searchGrounding
+          searchGrounding: searchGrounding,
+          attachments: attachments
         })
       });
 
@@ -1039,22 +1051,33 @@ export default function App() {
           </button>
         </div>
 
-        <ChatWindow
-          activeSession={activeSession}
-          onSendMessage={handleSendMessage}
-          onRegenerateMessage={handleRegenerateMessage}
-          isLoading={isLoading}
-          onToggleSidebar={() => setSidebarIsOpen(!sidebarIsOpen)}
-          sidebarIsOpen={sidebarIsOpen}
-          settings={settings}
-          onChangeModel={handleChangeModel}
-          onChangeSearchGrounding={handleChangeSearchGrounding}
-          isPremium={isPremium}
-          onOpenPricing={() => navigate('/pricing')}
-          onChangeCompareModels={handleChangeCompareModels}
-          onOpenLegal={handleOpenLegal}
-          userPlan={userPlan}
-        />
+        {currentRoutedPath === '/image-generator' ? (
+          <ImageGeneratorWindow
+            isPremium={isPremium}
+            onOpenPricing={() => navigate('/pricing')}
+            settings={settings}
+            creditsRemaining={creditsRemaining}
+            updateCredits={(remaining) => updateCredits(remaining)}
+            onToggleSidebar={() => setSidebarIsOpen(!sidebarIsOpen)}
+          />
+        ) : (
+          <ChatWindow
+            activeSession={activeSession}
+            onSendMessage={handleSendMessage}
+            onRegenerateMessage={handleRegenerateMessage}
+            isLoading={isLoading}
+            onToggleSidebar={() => setSidebarIsOpen(!sidebarIsOpen)}
+            sidebarIsOpen={sidebarIsOpen}
+            settings={settings}
+            onChangeModel={handleChangeModel}
+            onChangeSearchGrounding={handleChangeSearchGrounding}
+            isPremium={isPremium}
+            onOpenPricing={() => navigate('/pricing')}
+            onChangeCompareModels={handleChangeCompareModels}
+            onOpenLegal={handleOpenLegal}
+            userPlan={userPlan}
+          />
+        )}
       </div>
 
       {/* Global Settings Modal */}
