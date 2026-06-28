@@ -13,7 +13,15 @@ function vercelServerlessLocalDevPlugin() {
         if (req.url && (req.url.startsWith('/api/') || req.url.startsWith('/api?'))) {
           const parsedUrl = url.parse(req.url, true);
           const pathname = parsedUrl.pathname || '';
-          const relPath = pathname.slice(5); // remove '/api/'
+          let relPath = pathname.slice(5); // remove '/api/'
+          
+          if (relPath === 'chat/title') {
+            relPath = 'chat';
+          } else if (relPath.startsWith('payment/')) {
+            relPath = 'payment';
+          } else if (relPath.startsWith('coupons/')) {
+            relPath = 'coupons';
+          }
           
           let filePath = '';
           const possiblePaths = [
