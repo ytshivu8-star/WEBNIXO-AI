@@ -2,18 +2,6 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/api/chat/title",
-      "destination": "/api/chat"
-    },
-    {
-      "source": "/api/payment/:path*",
-      "destination": "/api/payment"
-    },
-    {
-      "source": "/api/coupons/:path*",
-      "destination": "/api/coupons"
-    },
-    {
       "source": "/((?!api/|assets/|static/|favicon.ico|_next/).*)",
       "destination": "/index.html"
     }

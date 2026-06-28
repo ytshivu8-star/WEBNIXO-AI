@@ -13,27 +13,8 @@ function vercelServerlessLocalDevPlugin() {
         if (req.url && (req.url.startsWith('/api/') || req.url.startsWith('/api?'))) {
           const parsedUrl = url.parse(req.url, true);
           const pathname = parsedUrl.pathname || '';
-          let relPath = pathname.slice(5); // remove '/api/'
           
-          if (relPath === 'chat/title') {
-            relPath = 'chat';
-          } else if (relPath.startsWith('payment/')) {
-            relPath = 'payment';
-          } else if (relPath.startsWith('coupons/')) {
-            relPath = 'coupons';
-          }
-          
-          let filePath = '';
-          const possiblePaths = [
-            path.join(__dirname, 'api', relPath + '.ts'),
-            path.join(__dirname, 'api', relPath, 'index.ts'),
-          ];
-          for (const p of possiblePaths) {
-            if (fs.existsSync(p) && fs.statSync(p).isFile()) {
-              filePath = p;
-              break;
-            }
-          }
+          let filePath = path.join(__dirname, 'api', '[...slug].ts');
 
           if (!filePath) {
             res.statusCode = 404;
