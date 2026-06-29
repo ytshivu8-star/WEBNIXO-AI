@@ -37,3 +37,125 @@ DROP POLICY IF EXISTS "Public full access to subscription plans" ON public.subsc
 
 -- Allow anonymous read and write access for admin purposes
 CREATE POLICY "Public full access to subscription plans" ON public.subscription_plans FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- PAYMENTS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.payments (
+  order_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  plan_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  payment_session_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to payments" ON public.payments;
+CREATE POLICY "Public full access to payments" ON public.payments FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- USER SUBSCRIPTIONS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.user_subscriptions (
+  email TEXT PRIMARY KEY,
+  plan_id TEXT NOT NULL,
+  amount NUMERIC NOT NULL,
+  order_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.user_subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to user_subscriptions" ON public.user_subscriptions;
+CREATE POLICY "Public full access to user_subscriptions" ON public.user_subscriptions FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- CONVERSIONS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.conversions (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  email TEXT NOT NULL,
+  conversion_type TEXT NOT NULL,
+  conversion_value NUMERIC,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.conversions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to conversions" ON public.conversions;
+CREATE POLICY "Public full access to conversions" ON public.conversions FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- PROFILES
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.profiles (
+  email TEXT PRIMARY KEY,
+  name TEXT,
+  theme TEXT,
+  credits_remaining NUMERIC,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to profiles" ON public.profiles;
+CREATE POLICY "Public full access to profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- AFFILIATE PROFILES
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.webnixo_profiles_affilate (
+  email TEXT PRIMARY KEY,
+  full_name TEXT,
+  referral_code TEXT,
+  custom_coupon_code TEXT,
+  stats JSONB,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.webnixo_profiles_affilate ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to webnixo_profiles_affilate" ON public.webnixo_profiles_affilate;
+CREATE POLICY "Public full access to webnixo_profiles_affilate" ON public.webnixo_profiles_affilate FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- AFFILIATE EVENTS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.webnixo_events_affilate (
+  id TEXT PRIMARY KEY,
+  user_email TEXT NOT NULL,
+  type TEXT NOT NULL,
+  details TEXT,
+  commission NUMERIC,
+  timestamp TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.webnixo_events_affilate ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to webnixo_events_affilate" ON public.webnixo_events_affilate;
+CREATE POLICY "Public full access to webnixo_events_affilate" ON public.webnixo_events_affilate FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- COUPONS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.coupons (
+  code TEXT PRIMARY KEY,
+  discount_percent NUMERIC NOT NULL,
+  description TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to coupons" ON public.coupons;
+CREATE POLICY "Public full access to coupons" ON public.coupons FOR ALL USING (true) WITH CHECK (true);
+
+-- ==========================================
+-- COUPON USAGES
+-- ==========================================
+CREATE TABLE IF NOT EXISTS public.coupon_usages (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  coupon_code TEXT NOT NULL,
+  plan_id TEXT,
+  original_price NUMERIC,
+  discounted_price NUMERIC,
+  applied_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+ALTER TABLE public.coupon_usages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public full access to coupon_usages" ON public.coupon_usages;
+CREATE POLICY "Public full access to coupon_usages" ON public.coupon_usages FOR ALL USING (true) WITH CHECK (true);
