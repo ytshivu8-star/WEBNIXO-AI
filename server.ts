@@ -1355,21 +1355,21 @@ app.get("/api/payment/verify", async (req, res) => {
     const isPaid = orderData.order_status === "PAID";
     console.log(`[Cashfree PG] Order ${order_id} status is ${orderData.order_status}`);
 
+    const amount = Number(orderData.order_amount);
+    let plan_id = "pro_monthly";
+    if (amount === 4999) {
+      plan_id = "pro_yearly";
+    } else if (amount === 499) {
+      plan_id = "pro_monthly";
+    } else if (amount === 1999) {
+      plan_id = "starter_yearly";
+    } else if (amount === 199) {
+      plan_id = "starter_monthly";
+    }
+
     if (isPaid) {
       const email = orderData.customer_details?.customer_email || "user@example.com";
-      const amount = Number(orderData.order_amount);
       const emailStr = email.toLowerCase();
-
-      let plan_id = "pro_monthly";
-      if (amount === 4999) {
-        plan_id = "pro_yearly";
-      } else if (amount === 499) {
-        plan_id = "pro_monthly";
-      } else if (amount === 1999) {
-        plan_id = "starter_yearly";
-      } else if (amount === 199) {
-        plan_id = "starter_monthly";
-      }
 
       const subscriptionDetails = {
         email: emailStr,
