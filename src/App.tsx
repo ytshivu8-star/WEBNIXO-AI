@@ -195,13 +195,15 @@ export default function App() {
           localStorage.setItem('webnixo_premium_user', 'true');
           
           const planId = data.plan?.plan_id || '';
+          const previousPlan = localStorage.getItem('webnixo_user_plan') || 'free';
+          const key = `webnixo_credits_remaining_${emailStr}`;
+
           if (planId.includes('pro') || planId.includes('premium')) {
             setUserPlan('pro');
             localStorage.setItem('webnixo_user_plan', 'pro');
             setCreditsLimit(10000);
             localStorage.setItem('webnixo_credits_limit', '10000');
-            const key = `webnixo_credits_remaining_${emailStr}`;
-            if (localStorage.getItem(key) === null) {
+            if (localStorage.getItem(key) === null || previousPlan !== 'pro') {
               setCreditsRemaining(10000);
               localStorage.setItem(key, '10000');
             }
@@ -210,8 +212,7 @@ export default function App() {
             localStorage.setItem('webnixo_user_plan', 'starter');
             setCreditsLimit(2000);
             localStorage.setItem('webnixo_credits_limit', '2000');
-            const key = `webnixo_credits_remaining_${emailStr}`;
-            if (localStorage.getItem(key) === null) {
+            if (localStorage.getItem(key) === null || previousPlan === 'free') {
               setCreditsRemaining(2000);
               localStorage.setItem(key, '2000');
             }
@@ -219,6 +220,7 @@ export default function App() {
         } else {
           setIsPremium(false);
           localStorage.removeItem('webnixo_premium_user');
+          const previousPlan = localStorage.getItem('webnixo_user_plan') || 'free';
           setUserPlan('free');
           localStorage.setItem('webnixo_user_plan', 'free');
           setCreditsLimit(30);

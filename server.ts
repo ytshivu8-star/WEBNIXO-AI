@@ -1409,19 +1409,19 @@ app.get("/api/payment/verify", async (req, res) => {
       const supabaseAdmin = getSupabaseAdmin();
       if (supabaseAdmin) {
         console.log(`[DB] Syncing user premium subscription for ${emailStr} with cloud store...`);
-        supabaseAdmin
-          .from("user_subscriptions")
-          .upsert(subscriptionDetails)
-          .then(({ error: upsertError }: any) => {
-            if (upsertError) {
-              console.log("[DB] Supabase sync skipped (table not initialized yet). Relying on robust local cache.");
-            } else {
-              console.log(`[DB] Successfully saved premium status for ${emailStr} in Supabase`);
-            }
-          })
-          .catch((err: any) => {
-            console.log("[DB] Cloud store sync error caught. Local cache remains active.");
-          });
+        try {
+          const { error: upsertError } = await supabaseAdmin
+            .from("user_subscriptions")
+            .upsert(subscriptionDetails);
+            
+          if (upsertError) {
+            console.log("[DB] Supabase sync skipped (table not initialized yet). Relying on robust local cache.");
+          } else {
+            console.log(`[DB] Successfully saved premium status for ${emailStr} in Supabase`);
+          }
+        } catch (err: any) {
+          console.log("[DB] Cloud store sync error caught. Local cache remains active.");
+        }
       }
     }
 
