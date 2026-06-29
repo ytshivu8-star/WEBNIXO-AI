@@ -23,7 +23,9 @@ export default function PaymentVerificationPage({ theme, onReturn }: PaymentVeri
 
     const verifyPayment = async () => {
       try {
+        console.log(`[Frontend] Initiating verification request to /api/payment/verify?order_id=${orderId}`);
         const response = await fetch(`/api/payment/verify?order_id=${orderId}`);
+        console.log(`[Frontend] Received verification response:`, response.status);
         if (!response.ok) {
           throw new Error('Server returned verification failure.');
         }

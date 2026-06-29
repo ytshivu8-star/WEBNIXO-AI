@@ -1415,8 +1415,45 @@ app.get("/api/payment/verify", async (req, res) => {
       // Reward affiliate if an affiliate coupon code was used
       await rewardAffiliateIfApplicable(emailStr, amount);
 
-      // Save premium subscription to Supabase if client is ready
+      let creditsToAdd = 0;
+      if (plan_id.includes('refill_')) {
+        const parts = plan_id.split('_');
+        creditsToAdd = parseInt(parts[1]) || 0;
+      } else if (plan_id.includes('pro') || plan_id.includes('premium')) {
+        creditsToAdd = 10000;
+      } else if (plan_id.includes('starter')) {
+        creditsToAdd = 2000;
+      }
+
       const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin) {
+        try {
+          // Fetch current profile to get existing credits
+          const { data: existingProfile } = await supabaseAdmin
+            .from("profiles")
+            .select("credits_remaining, name, theme")
+            .eq("email", emailStr)
+            .maybeSingle();
+            
+          const currentCredits = existingProfile?.credits_remaining || 0;
+          const newCredits = plan_id.includes('refill_') ? currentCredits + creditsToAdd : Math.max(currentCredits, creditsToAdd);
+
+          // Update profiles with new credits and plan
+          await supabaseAdmin.from("profiles").upsert({
+            email: emailStr,
+            name: existingProfile?.name || "Anonymous User",
+            theme: existingProfile?.theme || "dark",
+            credits_remaining: newCredits,
+            updated_at: new Date().toISOString()
+          });
+          
+          console.log(`[DB] Successfully updated profile credits for ${emailStr} to ${newCredits}`);
+        } catch (err) {
+          console.error("[DB] Failed to update profile credits:", err);
+        }
+      }
+
+      // Save premium subscription to Supabase if client is ready
       if (supabaseAdmin) {
         console.log(`[DB] Syncing user premium subscription for ${emailStr} with cloud store...`);
         try {

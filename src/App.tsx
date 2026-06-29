@@ -985,7 +985,7 @@ export default function App() {
 
   // Intercept special routes
   const isAuthCallbackPath = currentPath.startsWith('/auth/callback');
-  const isPaymentVerifyPath = currentPath.startsWith('/payment-verify');
+  const isPaymentVerifyPath = currentPath.includes('/payment-verify');
 
   if (isAuthCallbackPath) {
     return (
