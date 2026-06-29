@@ -479,7 +479,8 @@ export default function PricingModal({ isOpen, onClose, userEmail, theme, onOpen
         body: JSON.stringify({
           email: userEmail,
           amount: amount,
-          planId: planId
+          planId: planId,
+          couponCode: appliedCoupon?.code || ''
         })
       });
 

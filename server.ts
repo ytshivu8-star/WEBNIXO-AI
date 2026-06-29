@@ -917,16 +917,17 @@ async function logProfileToSupabase(profile: {
   const supabaseAdmin = getSupabaseAdmin();
   if (supabaseAdmin) {
     try {
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from("profiles")
-        .upsert(record);
+        .upsert(record)
+        .select();
       if (!error) {
-        console.log(`[DB Profile] Successfully synced profile to Supabase for ${emailStr}`);
+        console.log(`[DB Profile] Successfully synced profile to Supabase for ${emailStr}. Data:`, data);
       } else {
-        console.log(`[DB Profile] Supabase profiles sync skipped (table not initialized yet). Saved in memory.`);
+        console.error(`[DB Profile] Supabase profiles sync error:`, error);
       }
     } catch (e) {
-      console.log(`[DB Profile] Supabase query catch block hit. Fallback to cache.`);
+      console.error(`[DB Profile] Supabase query catch block hit:`, e);
     }
   }
 }
@@ -955,16 +956,17 @@ async function logPaymentToSupabase(payment: {
   const supabaseAdmin = getSupabaseAdmin();
   if (supabaseAdmin) {
     try {
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from("payments")
-        .upsert(record);
+        .upsert(record)
+        .select();
       if (!error) {
-        console.log(`[DB Payment] Successfully logged payment order ${payment.order_id} in Supabase.`);
+        console.log(`[DB Payment] Successfully logged payment order ${payment.order_id} in Supabase. Data:`, data);
       } else {
-        console.log(`[DB Payment] Supabase payments log skipped (table not initialized yet). Saved in memory.`);
+        console.error(`[DB Payment] Supabase payments log error:`, error);
       }
     } catch (e) {
-      console.log(`[DB Payment] Supabase query catch block hit. Fallback to cache.`);
+      console.error(`[DB Payment] Supabase query catch block hit:`, e);
     }
   }
 }
@@ -991,31 +993,38 @@ async function logConversionToSupabase(conversion: {
   const supabaseAdmin = getSupabaseAdmin();
   if (supabaseAdmin) {
     try {
-      const { error } = await supabaseAdmin
+      const { data, error } = await supabaseAdmin
         .from("conversions")
-        .insert(record);
+        .insert(record)
+        .select();
       if (!error) {
-        console.log(`[DB Conversion] Logged ${conversion.conversion_type} conversion successfully for ${emailStr}`);
+        console.log(`[DB Conversion] Logged ${conversion.conversion_type} conversion successfully for ${emailStr}. Data:`, data);
       } else {
-        console.log(`[DB Conversion] Supabase conversions table skipped. Logged in-memory.`);
+        console.error(`[DB Conversion] Supabase conversions table error:`, error);
       }
     } catch (e) {
-      console.log(`[DB Conversion] Supabase query catch block hit. Fallback to cache.`);
+      console.error(`[DB Conversion] Supabase query catch block hit:`, e);
     }
   }
 }
 
 // Helper to reward affiliate if a coupon code matches an active affiliate profile
-async function rewardAffiliateIfApplicable(emailStr: string, amountPaid: number) {
+async function rewardAffiliateIfApplicable(emailStr: string, amountPaid: number, appliedCouponCode?: string) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     if (!supabaseAdmin) return;
 
-    // Find the most recent coupon applied by this user
-    const recentUsage = inMemoryCouponUsages.find(u => u.email === emailStr.toLowerCase());
-    if (!recentUsage) return;
-
-    const codeClean = String(recentUsage.coupon_code).trim().toUpperCase();
+    let codeClean = "";
+    if (appliedCouponCode) {
+      codeClean = String(appliedCouponCode).trim().toUpperCase();
+    } else {
+      // Find the most recent coupon applied by this user
+      const recentUsage = inMemoryCouponUsages.find(u => u.email === emailStr.toLowerCase());
+      if (!recentUsage) return;
+      codeClean = String(recentUsage.coupon_code || recentUsage.code).trim().toUpperCase();
+    }
+    
+    if (!codeClean) return;
 
     // Check if this coupon belongs to an affiliate (webnixo_profiles_affilate)
     const { data: affiliate, error } = await supabaseAdmin
@@ -1222,7 +1231,7 @@ app.get("/api/payment/status", async (req, res) => {
 // Create Cashfree PG Payment Order
 app.post("/api/payment/create-order", async (req, res) => {
   try {
-    const { email, amount, planId } = req.body;
+    const { email, amount, planId, couponCode } = req.body;
     if (!email || !amount || !planId) {
       return res.status(200).json({ error: "email, amount, and planId are required" });
     }
@@ -1249,6 +1258,11 @@ app.post("/api/payment/create-order", async (req, res) => {
 
     console.log(`[Cashfree PG] Creating order ${orderId} for ${email} (Amount: INR ${amount}) in ${isSandbox ? 'sandbox' : 'production'} mode`);
 
+    const tags: Record<string, string> = { plan_id: planId };
+    if (couponCode) {
+      tags.coupon_code = couponCode;
+    }
+
     const response = await fetch(cashfreeBaseUrl, {
       method: "POST",
       headers: {
@@ -1269,9 +1283,7 @@ app.post("/api/payment/create-order", async (req, res) => {
         order_meta: {
           return_url: returnUrl
         },
-        order_tags: {
-          plan_id: planId
-        }
+        order_tags: tags
       })
     });
 
@@ -1412,8 +1424,31 @@ app.get("/api/payment/verify", async (req, res) => {
         details: { plan_id, order_id: order_id as string, simulated: false }
       });
 
+      const appliedCouponCode = orderData.order_tags?.coupon_code;
+
       // Reward affiliate if an affiliate coupon code was used
-      await rewardAffiliateIfApplicable(emailStr, amount);
+      await rewardAffiliateIfApplicable(emailStr, amount, appliedCouponCode);
+      if (appliedCouponCode && supabaseAdmin) {
+        const usageId = `usage_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        try {
+          const { data: usageData, error: usageError } = await supabaseAdmin.from("coupon_usages").insert({
+            id: usageId,
+            code: appliedCouponCode,
+            email: emailStr,
+            plan_id: plan_id,
+            original_price: amount, 
+            discounted_price: amount,
+            applied_at: new Date().toISOString()
+          }).select();
+          if (usageError) {
+             console.error("[DB] Failed to insert coupon usage:", usageError);
+          } else {
+             console.log(`[DB] Successfully logged coupon usage for ${appliedCouponCode}. Data:`, usageData);
+          }
+        } catch (err) {
+          console.error("[DB] Catch block for coupon usage:", err);
+        }
+      }
 
       let creditsToAdd = 0;
       if (plan_id.includes('refill_')) {
@@ -1439,17 +1474,21 @@ app.get("/api/payment/verify", async (req, res) => {
           const newCredits = plan_id.includes('refill_') ? currentCredits + creditsToAdd : Math.max(currentCredits, creditsToAdd);
 
           // Update profiles with new credits and plan
-          await supabaseAdmin.from("profiles").upsert({
+          const { data: profileData, error: profileError } = await supabaseAdmin.from("profiles").upsert({
             email: emailStr,
             name: existingProfile?.name || "Anonymous User",
             theme: existingProfile?.theme || "dark",
             credits_remaining: newCredits,
             updated_at: new Date().toISOString()
-          });
+          }).select();
           
-          console.log(`[DB] Successfully updated profile credits for ${emailStr} to ${newCredits}`);
+          if (profileError) {
+            console.error("[DB] Failed to update profile credits:", profileError);
+          } else {
+            console.log(`[DB] Successfully updated profile credits for ${emailStr} to ${newCredits}. Data:`, profileData);
+          }
         } catch (err) {
-          console.error("[DB] Failed to update profile credits:", err);
+          console.error("[DB] Failed to update profile credits catch block:", err);
         }
       }
 
@@ -1457,15 +1496,16 @@ app.get("/api/payment/verify", async (req, res) => {
       if (supabaseAdmin) {
         console.log(`[DB] Syncing user premium subscription for ${emailStr} with cloud store...`);
         try {
-          const { error: upsertError } = await supabaseAdmin
+          const { data: subData, error: upsertError } = await supabaseAdmin
             .from("user_subscriptions")
-            .upsert(subscriptionDetails);
+            .upsert(subscriptionDetails)
+            .select();
             
           if (upsertError) {
             console.error("[DB] Supabase user_subscriptions sync error:", upsertError);
             console.log("[DB] Supabase sync skipped (table not initialized yet). Relying on robust local cache.");
           } else {
-            console.log(`[DB] Successfully saved premium status for ${emailStr} in Supabase`);
+            console.log(`[DB] Successfully saved premium status for ${emailStr} in Supabase. Data:`, subData);
           }
         } catch (err: any) {
           console.error("[DB] Cloud store sync error caught:", err);
