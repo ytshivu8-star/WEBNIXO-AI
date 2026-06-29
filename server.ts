@@ -1268,6 +1268,9 @@ app.post("/api/payment/create-order", async (req, res) => {
         },
         order_meta: {
           return_url: returnUrl
+        },
+        order_tags: {
+          plan_id: planId
         }
       })
     });
@@ -1356,15 +1359,22 @@ app.get("/api/payment/verify", async (req, res) => {
     console.log(`[Cashfree PG] Order ${order_id} status is ${orderData.order_status}`);
 
     const amount = Number(orderData.order_amount);
-    let plan_id = "pro_monthly";
-    if (amount === 4999) {
-      plan_id = "pro_yearly";
-    } else if (amount === 499) {
-      plan_id = "pro_monthly";
-    } else if (amount === 1999) {
-      plan_id = "starter_yearly";
-    } else if (amount === 199) {
-      plan_id = "starter_monthly";
+    let plan_id = orderData.order_tags?.plan_id || "monthly";
+
+    const supabaseAdmin = getSupabaseAdmin();
+    if (!orderData.order_tags?.plan_id && supabaseAdmin) {
+      try {
+        const { data: dbPayment } = await supabaseAdmin
+          .from("payments")
+          .select("plan_id")
+          .eq("order_id", order_id)
+          .maybeSingle();
+        if (dbPayment && dbPayment.plan_id) {
+          plan_id = dbPayment.plan_id;
+        }
+      } catch (err) {
+        console.error("Failed to fetch plan_id from db", err);
+      }
     }
 
     if (isPaid) {
@@ -1415,12 +1425,14 @@ app.get("/api/payment/verify", async (req, res) => {
             .upsert(subscriptionDetails);
             
           if (upsertError) {
+            console.error("[DB] Supabase user_subscriptions sync error:", upsertError);
             console.log("[DB] Supabase sync skipped (table not initialized yet). Relying on robust local cache.");
           } else {
             console.log(`[DB] Successfully saved premium status for ${emailStr} in Supabase`);
           }
         } catch (err: any) {
-          console.log("[DB] Cloud store sync error caught. Local cache remains active.");
+          console.error("[DB] Cloud store sync error caught:", err);
+          console.log("[DB] Local cache remains active.");
         }
       }
     }
