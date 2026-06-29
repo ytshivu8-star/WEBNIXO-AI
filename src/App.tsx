@@ -217,7 +217,7 @@ export default function App() {
               localStorage.setItem(key, '2000');
             }
           }
-        } else {
+        } else if (data.dbStatus === 'active') {
           setIsPremium(false);
           localStorage.removeItem('webnixo_premium_user');
           const previousPlan = localStorage.getItem('webnixo_user_plan') || 'free';
@@ -229,6 +229,24 @@ export default function App() {
           if (localStorage.getItem(key) === null) {
             setCreditsRemaining(30);
             localStorage.setItem(key, '30');
+          }
+        } else {
+          // Database fallback active or table missing. Trust local storage if it says true.
+          if (localStorage.getItem('webnixo_premium_user') === 'true') {
+            setIsPremium(true);
+            const savedPlan = localStorage.getItem('webnixo_user_plan') as 'free' | 'starter' | 'pro';
+            if (savedPlan && savedPlan !== 'free') {
+              setUserPlan(savedPlan);
+            }
+            const key = `webnixo_credits_remaining_${emailStr}`;
+            const savedCredits = localStorage.getItem(key);
+            if (savedCredits !== null) {
+              setCreditsRemaining(Number(savedCredits));
+            }
+            const limit = localStorage.getItem('webnixo_credits_limit');
+            if (limit) {
+              setCreditsLimit(Number(limit));
+            }
           }
         }
       }

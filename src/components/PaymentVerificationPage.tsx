@@ -34,6 +34,19 @@ export default function PaymentVerificationPage({ theme, onReturn }: PaymentVeri
           // Update local storage premium state immediately as fallback helper
           try {
             localStorage.setItem('webnixo_premium_user', 'true');
+            const planId = data.plan_id || '';
+            const emailStr = data.email?.toLowerCase() || '';
+            const key = `webnixo_credits_remaining_${emailStr}`;
+
+            if (planId.includes('pro') || planId.includes('premium')) {
+              localStorage.setItem('webnixo_user_plan', 'pro');
+              localStorage.setItem('webnixo_credits_limit', '10000');
+              localStorage.setItem(key, '10000');
+            } else {
+              localStorage.setItem('webnixo_user_plan', 'starter');
+              localStorage.setItem('webnixo_credits_limit', '2000');
+              localStorage.setItem(key, '2000');
+            }
           } catch (e) {
             console.error(e);
           }

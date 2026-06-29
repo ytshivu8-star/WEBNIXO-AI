@@ -1429,7 +1429,8 @@ app.get("/api/payment/verify", async (req, res) => {
       status: orderData.order_status,
       amount: orderData.order_amount,
       email: orderData.customer_details?.customer_email,
-      isPaid
+      isPaid,
+      plan_id: isPaid ? plan_id : undefined
     });
   } catch (err: any) {
     console.error("Payment Verification failure:", err);
