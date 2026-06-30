@@ -133,32 +133,11 @@ export default function App() {
     }
   });
 
-  const [userPlan, setUserPlan] = useState<'free' | 'starter' | 'pro'>(() => {
-    try {
-      return (localStorage.getItem('webnixo_user_plan') as 'free' | 'starter' | 'pro') || 'free';
-    } catch {
-      return 'free';
-    }
-  });
+  const [userPlan, setUserPlan] = useState<'free' | 'starter' | 'pro'>('free');
 
-  const [creditsLimit, setCreditsLimit] = useState<number>(() => {
-    try {
-      return Number(localStorage.getItem('webnixo_credits_limit')) || 30;
-    } catch {
-      return 30;
-    }
-  });
+  const [creditsLimit, setCreditsLimit] = useState<number>(30);
 
-  const [creditsRemaining, setCreditsRemaining] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem(`webnixo_credits_remaining_${settings.userEmail || 'default'}`);
-      if (stored !== null) return Number(stored);
-      const plan = localStorage.getItem('webnixo_user_plan') || 'free';
-      return plan === 'pro' ? 10000 : plan === 'starter' ? 2000 : 30;
-    } catch {
-      return 30;
-    }
-  });
+  const [creditsRemaining, setCreditsRemaining] = useState<number>(30);
 
   const updateCredits = (remaining: number, limit?: number) => {
     setCreditsRemaining(remaining);
@@ -167,6 +146,15 @@ export default function App() {
     if (limit !== undefined) {
       setCreditsLimit(limit);
       localStorage.setItem('webnixo_credits_limit', String(limit));
+    }
+    
+    // Background sync to DB (don't block UI)
+    if (settings.userEmail) {
+      fetch('/api/profile/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: settings.userEmail, credits_remaining: remaining })
+      }).catch(err => console.error("Failed to sync credits to DB:", err));
     }
   };
 
@@ -184,74 +172,47 @@ export default function App() {
     updateCredits(limit, limit);
   };
 
-  const checkPremiumStatus = async (email: string) => {
+  const loadUserProfile = async (email: string, name: string) => {
     try {
-      const res = await fetch(`/api/payment/status?email=${encodeURIComponent(email)}`);
+      // Fetch or initialize profile from DB (single source of truth)
+      const res = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          name: name || "Anonymous User",
+          theme: settings.theme
+        })
+      });
+      
       if (res.ok) {
         const data = await res.json();
-        const emailStr = email.toLowerCase();
-        if (data.isPremium) {
-          setIsPremium(true);
-          localStorage.setItem('webnixo_premium_user', 'true');
+        if (data.profile) {
+          const profile = data.profile;
           
-          const planId = data.plan?.plan_id || '';
-          const previousPlan = localStorage.getItem('webnixo_user_plan') || 'free';
-          const key = `webnixo_credits_remaining_${emailStr}`;
-
-          if (planId.includes('pro') || planId.includes('premium')) {
-            setUserPlan('pro');
-            localStorage.setItem('webnixo_user_plan', 'pro');
-            setCreditsLimit(10000);
-            localStorage.setItem('webnixo_credits_limit', '10000');
-            if (localStorage.getItem(key) === null || previousPlan !== 'pro') {
-              setCreditsRemaining(10000);
-              localStorage.setItem(key, '10000');
-            }
-          } else {
-            setUserPlan('starter');
-            localStorage.setItem('webnixo_user_plan', 'starter');
-            setCreditsLimit(2000);
-            localStorage.setItem('webnixo_credits_limit', '2000');
-            if (localStorage.getItem(key) === null || previousPlan === 'free') {
-              setCreditsRemaining(2000);
-              localStorage.setItem(key, '2000');
-            }
-          }
-        } else if (data.dbStatus === 'active') {
-          setIsPremium(false);
-          localStorage.removeItem('webnixo_premium_user');
-          const previousPlan = localStorage.getItem('webnixo_user_plan') || 'free';
-          setUserPlan('free');
-          localStorage.setItem('webnixo_user_plan', 'free');
-          setCreditsLimit(30);
-          localStorage.setItem('webnixo_credits_limit', '30');
-          const key = `webnixo_credits_remaining_${emailStr}`;
-          if (localStorage.getItem(key) === null) {
-            setCreditsRemaining(30);
-            localStorage.setItem(key, '30');
-          }
-        } else {
-          // Database fallback active or table missing. Trust local storage if it says true.
-          if (localStorage.getItem('webnixo_premium_user') === 'true') {
-            setIsPremium(true);
-            const savedPlan = localStorage.getItem('webnixo_user_plan') as 'free' | 'starter' | 'pro';
-            if (savedPlan && savedPlan !== 'free') {
-              setUserPlan(savedPlan);
-            }
-            const key = `webnixo_credits_remaining_${emailStr}`;
-            const savedCredits = localStorage.getItem(key);
-            if (savedCredits !== null) {
-              setCreditsRemaining(Number(savedCredits));
-            }
-            const limit = localStorage.getItem('webnixo_credits_limit');
-            if (limit) {
-              setCreditsLimit(Number(limit));
-            }
-          }
+          // Initialize state from profile
+          const plan = profile.plan || 'free';
+          const isPro = plan.includes('pro') || plan.includes('premium');
+          const isStarter = plan.includes('starter');
+          
+          const normalizedPlan = isPro ? 'pro' : isStarter ? 'starter' : 'free';
+          
+          setUserPlan(normalizedPlan);
+          setIsPremium(normalizedPlan !== 'free');
+          
+          const limit = isPro ? 10000 : isStarter ? 2000 : 30;
+          setCreditsLimit(limit);
+          setCreditsRemaining(profile.credits_remaining ?? limit);
+          
+          // Use localStorage only as a temporary cache
+          localStorage.setItem('webnixo_premium_user', normalizedPlan !== 'free' ? 'true' : 'false');
+          localStorage.setItem('webnixo_user_plan', normalizedPlan);
+          localStorage.setItem('webnixo_credits_limit', String(limit));
+          localStorage.setItem(`webnixo_credits_remaining_${email.toLowerCase()}`, String(profile.credits_remaining ?? limit));
         }
       }
-    } catch (e) {
-      console.error('[Premium Status Check] Error:', e);
+    } catch (err) {
+      console.error("[Profile Load] Error:", err);
     }
   };
 
@@ -262,20 +223,8 @@ export default function App() {
     setSettings(updatedSettings);
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(updatedSettings));
     
-    // Check premium status on login
-    checkPremiumStatus(email);
-
-    // Sync user profile to backend database asynchronously
-    fetch('/api/profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        name: name || "Anonymous User",
-        theme: settings.theme,
-        credits: creditsRemaining
-      })
-    }).catch(err => console.error("Profile DB sync skipped:", err));
+    // Load authoritative profile state from DB
+    loadUserProfile(email, name);
 
     // Auto-create a chat if there's none
     if (chats.length === 0) {
