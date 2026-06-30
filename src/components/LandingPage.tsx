@@ -213,19 +213,6 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
             </span>
           )}
           <motion.button
-            whileHover={{ scale: 1.05, y: -1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onLogin('demo@webnixo.ai', 'Demo User')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-              settings.theme === 'dark'
-                ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700'
-                : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-200 shadow-xs'
-            }`}
-          >
-            Try Demo
-          </motion.button>
-          
-          <motion.button
             id="google-signin-btn"
             whileHover={{ scale: 1.05, y: -1 }}
             whileTap={{ scale: 0.95 }}
@@ -301,16 +288,6 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                   <GoogleIcon className="w-5 h-5" />
                 )}
                 <span>Get Started Free</span>
-              </button>
-              <button 
-                onClick={() => onLogin('demo@webnixo.ai', 'Demo User')}
-                className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black uppercase tracking-wider text-sm border-2 transition-all hover:scale-105 active:scale-95 cursor-pointer flex justify-center items-center ${
-                  settings.theme === 'dark' 
-                    ? 'border-zinc-700 bg-zinc-800/50 text-white hover:bg-zinc-700' 
-                    : 'border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50'
-                }`}
-              >
-                Try Live Demo
               </button>
             </motion.div>
           </div>
@@ -1110,7 +1087,7 @@ export default function LandingPage({ settings, onLogin, onOpenLegal }: LandingP
                 </ul>
               </div>
               <button 
-                onClick={() => onLogin('demo@webnixo.ai', 'Demo User')}
+                onClick={handleGoogleSignIn}
                 className={`w-full py-3.5 mt-8 rounded-xl font-black text-xs transition-all duration-300 cursor-pointer text-center uppercase tracking-wider relative z-10 overflow-hidden group/btn ${
                   settings.theme === 'dark'
                     ? 'bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700'

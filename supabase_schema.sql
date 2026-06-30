@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     email TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     theme TEXT DEFAULT 'dark',
-    plan TEXT DEFAULT 'free',
     credits_remaining INTEGER DEFAULT 30,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
